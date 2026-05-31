@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SacredForge AI · Quran & Bible Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:   #06060e;
+    --bg2:  #0c0c1a;
+    --bg3:  #131325;
+    --bg4:  #1a1a30;
+    --border:  rgba(180,140,60,0.12);
+    --border2: rgba(180,140,60,0.22);
+    --gold: #c8a84b;
+    --gold2: #f0d080;
+    --gold-dim: rgba(200,168,75,0.12);
+    --teal: #3dc9a8;
+    --teal-dim: rgba(61,201,168,0.10);
+    --text:  #ede8d8;
+    --text2: #8a8270;
+    --text3: #4a4535;
+    --danger: #e05555;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --sidebar-w: 270px;
+    --header-h: 58px;
+    --font-display: 'Cinzel', serif;
+    --font-body: 'Lora', serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:15px; line-height:1.6; overflow:hidden; }
+
+  /* Background grain */
+  body::before {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity:0.6;
+  }
+
+  #app { display:flex; height:100dvh; width:100%; overflow:hidden; position:relative; z-index:1; }
+
+  /* ── SIDEBAR ── */
+  #sidebar {
+    width:var(--sidebar-w); min-width:var(--sidebar-w); height:100%;
+    background:var(--bg2); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; transition:transform 0.28s cubic-bezier(.4,0,.2,1);
+    z-index:100; flex-shrink:0; overflow:hidden;
+  }
+  .sidebar-header { padding:22px 18px 16px; border-bottom:1px solid var(--border); }
+  .logo { font-family:var(--font-display); font-size:20px; font-weight:700; color:var(--gold2); letter-spacing:1px; display:flex; align-items:center; gap:8px; }
+  .logo-sub { font-size:11px; color:var(--text3); font-family:var(--font-mono); margin-top:3px; letter-spacing:0.5px; }
+
+  .sidebar-section { padding:14px 16px 8px; }
+  .sidebar-label { font-family:var(--font-display); font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+
+  .scripture-btn {
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm);
+    border:1px solid transparent; background:transparent; color:var(--text2);
+    font-family:var(--font-body); font-size:13px; cursor:pointer; transition:all .15s; text-align:left; width:100%;
+  }
+  .scripture-btn:hover { background:var(--bg3); color:var(--text); border-color:var(--border); }
+  .scripture-btn.active { background:var(--gold-dim); border-color:rgba(200,168,75,0.3); color:var(--gold2); }
+  .scripture-icon { width:30px; height:30px; border-radius:7px; background:var(--bg4); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .scripture-btn.active .scripture-icon { background:rgba(200,168,75,0.18); }
+
+  .sidebar-footer { margin-top:auto; padding:16px 18px; border-top:1px solid var(--border); }
+  .status-row { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text3); font-family:var(--font-mono); }
+  .status-dot { width:6px; height:6px; border-radius:50%; background:var(--teal); flex-shrink:0; box-shadow:0 0 5px var(--teal); }
+
+  /* ── MAIN ── */
+  #main { flex:1; display:flex; flex-direction:column; min-width:0; width:0; overflow:hidden; background:var(--bg); position:relative; }
+
+  #header { height:var(--header-h); min-height:var(--header-h); display:flex; align-items:center; padding:0 18px; gap:12px; border-bottom:1px solid var(--border); background:var(--bg); flex-shrink:0; z-index:10; }
+  #menu-btn { display:none; align-items:center; justify-content:center; width:38px; height:38px; border-radius:var(--radius-sm); border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; font-size:18px; transition:all .15s; }
+  #menu-btn:hover { background:var(--bg3); color:var(--text); }
+  .header-title { font-family:var(--font-display); font-size:14px; font-weight:600; color:var(--text); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:0.5px; }
+  .header-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .header-chip { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; border:1px solid var(--border); background:var(--bg3); font-size:12px; font-family:var(--font-body); color:var(--text2); cursor:pointer; transition:all .15s; white-space:nowrap; }
+  .header-chip:hover { border-color:var(--border2); color:var(--text); }
+  .header-chip .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); }
+
+  /* ── MESSAGES ── */
+  #messages { flex:1; overflow-y:auto; overflow-x:hidden; padding:26px 22px 16px; display:flex; flex-direction:column; gap:22px; scroll-behavior:smooth; }
+  #messages::-webkit-scrollbar { width:3px; }
+  #messages::-webkit-scrollbar-thumb { background:var(--bg4); border-radius:3px; }
+
+  .msg { display:flex; gap:10px; max-width:100%; animation:msgIn .22s ease; align-items:flex-start; }
+  @keyframes msgIn { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+  .msg.user { flex-direction:row-reverse; }
+  .msg-avatar { width:34px; height:34px; border-radius:50%; background:var(--bg3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; flex-shrink:0; align-self:flex-start; margin-top:2px; font-family:var(--font-display); }
+  .msg-avatar.sf { background:var(--gold-dim); border-color:rgba(200,168,75,0.35); color:var(--gold); }
+  .msg-avatar.user-av { color:var(--text2); }
+  .msg-content { max-width:min(660px,calc(100% - 50px)); display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .msg.user .msg-content { align-items:flex-end; }
+  .msg-bubble { padding:14px 17px; border-radius:18px; font-size:14px; line-height:1.75; word-break:break-word; overflow-wrap:anywhere; min-width:0; }
+  .msg.sf .msg-bubble { background:var(--bg2); border:1px solid var(--border2); border-top-left-radius:4px; color:var(--text); }
+  .msg.user .msg-bubble { background:var(--gold-dim); border:1px solid rgba(200,168,75,0.28); border-top-right-radius:4px; color:var(--text); }
+  .msg-bubble pre { background:#050508; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px 16px; margin:12px -2px 4px; overflow-x:auto; font-family:var(--font-mono); font-size:12px; line-height:1.7; color:var(--teal); white-space:pre; max-width:100%; }
+  .msg-meta { font-size:11px; color:var(--text3); font-family:var(--font-mono); padding:2px 6px; letter-spacing:0.3px; }
+
+  /* Typing */
+  .typing-indicator { display:flex; align-items:center; gap:5px; padding:13px 16px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; border-bottom-left-radius:4px; width:fit-content; }
+  .typing-dot { width:6px; height:6px; border-radius:50%; background:var(--text3); animation:typingBounce 1.3s infinite; }
+  .typing-dot:nth-child(2){animation-delay:.22s;} .typing-dot:nth-child(3){animation-delay:.44s;}
+  @keyframes typingBounce { 0%,60%,100%{transform:translateY(0);background:var(--text3);} 30%{transform:translateY(-6px);background:var(--gold);} }
+
+  /* Suggestions */
+  .suggestions { display:flex; flex-wrap:wrap; gap:8px; padding:8px 22px 12px; flex-shrink:0; width:100%; overflow:hidden; border-top:1px solid var(--border); }
+  .suggest-chip { padding:7px 14px; border-radius:20px; border:1px solid var(--border2); background:var(--bg3); color:var(--text2); font-size:12px; font-family:var(--font-body); cursor:pointer; transition:all .15s; white-space:nowrap; flex-shrink:0; appearance:none; display:inline-flex; align-items:center; }
+  .suggest-chip:hover { border-color:rgba(200,168,75,0.35); color:var(--gold); background:var(--gold-dim); }
+
+  /* Input */
+  #input-area { flex-shrink:0; padding:0 18px 18px; width:100%; }
+  .input-box { background:var(--bg2); border:1.5px solid rgba(180,140,60,0.14); border-radius:16px; display:flex; flex-direction:column; transition:border-color .2s, box-shadow .2s; overflow:hidden; width:100%; }
+  .input-box:focus-within { border-color:rgba(200,168,75,0.45); box-shadow:0 0 0 3px rgba(200,168,75,0.06); }
+  #chat-input { width:100%; background:transparent; border:none; outline:none; color:var(--text); font-family:var(--font-body); font-size:14px; line-height:1.6; padding:14px 16px 10px; resize:none; min-height:52px; max-height:140px; overflow-y:auto; }
+  #chat-input::placeholder { color:var(--text3); }
+  .input-toolbar { display:flex; align-items:center; padding:8px 10px; gap:6px; border-top:1px solid var(--border); width:100%; }
+  .input-action-btn { display:flex !important; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; border:1px solid transparent; background:transparent; color:var(--text3); cursor:pointer; font-size:15px; transition:all .15s; flex-shrink:0; padding:0; }
+  .input-action-btn:hover { background:var(--bg3); color:var(--text2); border-color:var(--border); }
+  .input-spacer { flex:1; }
+  #send-btn { display:inline-flex !important; align-items:center !important; gap:7px !important; padding:8px 17px !important; border-radius:10px !important; border:none !important; background:var(--gold) !important; color:#000 !important; font-family:var(--font-display) !important; font-size:12px !important; font-weight:600 !important; cursor:pointer !important; transition:background .15s, transform .15s !important; flex-shrink:0 !important; letter-spacing:0.8px !important; }
+  #send-btn:hover { background:var(--gold2) !important; transform:scale(1.02); }
+  #send-btn:disabled { opacity:.5 !important; cursor:not-allowed !important; transform:none !important; }
+
+  /* Speak / Action buttons */
+  .speak-btn, .studio-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:20px; border:1px solid var(--border2); background:var(--bg3); color:var(--text3); font-family:var(--font-body); font-size:11px; cursor:pointer; transition:all .15s; margin-top:4px; }
+  .speak-btn:hover, .studio-btn:hover { border-color:rgba(200,168,75,0.4); color:var(--gold); }
+  .speak-btn.speaking { border-color:rgba(61,201,168,0.5); color:var(--teal); background:var(--teal-dim); }
+  .studio-btn { border-color:rgba(200,168,75,0.3); color:var(--gold); background:var(--gold-dim); }
+  .studio-btn:hover { background:rgba(200,168,75,0.2); border-color:var(--gold); }
+
+  /* TTS Panel */
+  #tts-panel { display:none; flex-shrink:0; background:var(--bg2); border-top:1px solid var(--border); padding:14px 22px; gap:12px; flex-direction:column; }
+  #tts-panel.open { display:flex; }
+  .tts-title { font-family:var(--font-display); font-size:11px; font-weight:600; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase; display:flex; align-items:center; gap:6px; }
+  .tts-select { background:var(--bg3); border:1px solid var(--border2); border-radius:var(--radius-sm); color:var(--text2); font-family:var(--font-body); font-size:12px; padding:6px 10px; outline:none; cursor:pointer; }
+  .tts-slider { -webkit-appearance:none; width:80px; height:3px; background:var(--bg4); border-radius:2px; outline:none; cursor:pointer; }
+  .tts-slider::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--gold); cursor:pointer; }
+  .tts-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--radius-sm); border:none; font-family:var(--font-display); font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; flex-shrink:0; letter-spacing:0.5px; }
+  .tts-btn.primary { background:var(--gold); color:#000; }
+  .tts-btn.primary:hover { background:var(--gold2); }
+  .tts-btn.primary:disabled { opacity:.5; cursor:not-allowed; }
+  .tts-btn.secondary { background:var(--bg4); border:1px solid var(--border2); color:var(--text2); }
+  .tts-btn.secondary:hover { color:var(--text); border-color:var(--border2); }
+  .tts-status { font-size:11px; font-family:var(--font-mono); color:var(--text3); min-height:16px; }
+  .tts-status.ok { color:var(--teal); } .tts-status.err { color:var(--danger); }
+
+  /* Mobile overlay */
+  #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:90; backdrop-filter:blur(3px); }
+
+  /* ── SCRIPTURE STUDIO ── */
+  #scripture-studio {
+    display:none; position:fixed; inset:0; z-index:500; background:#04040a; flex-direction:column; overflow:hidden;
+  }
+  #scripture-studio.open { display:flex; }
+  .ss-topbar { display:flex; align-items:center; gap:12px; padding:10px 16px; background:rgba(0,0,0,0.7); border-bottom:1px solid rgba(180,140,60,0.1); flex-shrink:0; backdrop-filter:blur(10px); }
+  .ss-logo { font-family:var(--font-display); font-size:15px; font-weight:700; color:var(--gold2); display:flex; align-items:center; gap:7px; flex-shrink:0; }
+  .ss-spacer { flex:1; }
+  .ss-top-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:8px; border:1px solid rgba(180,140,60,0.2); background:rgba(180,140,60,0.07); color:var(--text2); font-family:var(--font-display); font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; letter-spacing:0.5px; }
+  .ss-top-btn:hover { background:rgba(180,140,60,0.15); color:var(--text); }
+  .ss-top-btn.primary { background:var(--gold); border-color:var(--gold); color:#000; }
+  .ss-top-btn.primary:hover { background:var(--gold2); }
+  .ss-top-btn.teal { border-color:rgba(61,201,168,0.35); color:var(--teal); background:rgba(61,201,168,0.08); }
+  .ss-top-btn.teal:hover { background:rgba(61,201,168,0.15); }
+  .ss-top-btn.danger { border-color:rgba(224,85,85,0.35); color:#e05555; }
+  .ss-top-btn.danger:hover { background:rgba(224,85,85,0.15); }
+  .ss-top-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+  .ss-body { display:flex; flex:1; min-height:0; overflow:hidden; }
+
+  .ss-left { width:320px; min-width:260px; flex-shrink:0; display:flex; flex-direction:column; border-right:1px solid rgba(180,140,60,0.08); background:#080812; overflow:hidden; }
+  .ss-panel-header { padding:10px 14px 8px; font-family:var(--font-display); font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); border-bottom:1px solid rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .ss-script-editor { flex:1; background:transparent; border:none; outline:none; color:#d8d0c0; font-family:var(--font-mono); font-size:12px; line-height:1.8; padding:14px; resize:none; overflow-y:auto; }
+  .ss-script-editor::placeholder { color:#2a2535; }
+  .ss-scene-list { flex-shrink:0; max-height:190px; overflow-y:auto; border-top:1px solid rgba(255,255,255,0.04); padding:8px; display:flex; flex-direction:column; gap:3px; }
+  .ss-scene-item { padding:7px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.02); font-size:11px; color:var(--text2); cursor:pointer; transition:all .12s; display:flex; align-items:center; gap:8px; }
+  .ss-scene-item:hover { background:rgba(200,168,75,0.08); border-color:rgba(200,168,75,0.2); color:var(--text); }
+  .ss-scene-item.active { background:rgba(200,168,75,0.14); border-color:rgba(200,168,75,0.35); color:var(--gold); }
+  .ss-scene-num { font-family:var(--font-mono); font-size:10px; color:var(--text3); flex-shrink:0; }
+
+  .ss-canvas-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#04040a; position:relative; overflow:hidden; min-width:0; }
+  #ss-canvas { max-width:100%; max-height:100%; display:block; border-radius:4px; box-shadow:0 0 80px rgba(200,168,75,0.06); }
+  .ss-playbar { position:absolute; bottom:0; left:0; right:0; display:flex; align-items:center; gap:10px; padding:10px 16px; background:linear-gradient(transparent, rgba(0,0,0,0.9)); }
+  .ss-play-btn { width:36px; height:36px; border-radius:50%; border:2px solid rgba(200,168,75,0.5); background:rgba(200,168,75,0.12); color:var(--gold); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
+  .ss-play-btn:hover { background:rgba(200,168,75,0.25); border-color:var(--gold); }
+  .ss-timeline { flex:1; height:3px; background:rgba(255,255,255,0.08); border-radius:2px; cursor:pointer; position:relative; }
+  .ss-timeline-fill { height:100%; background:var(--gold); border-radius:2px; width:0%; transition:width .1s linear; pointer-events:none; }
+  .ss-time-label { font-family:var(--font-mono); font-size:10px; color:#555; flex-shrink:0; }
+  .ss-scene-badge { font-size:10px; font-family:var(--font-mono); background:rgba(200,168,75,0.15); color:var(--gold); padding:2px 8px; border-radius:4px; flex-shrink:0; }
+
+  .ss-right { width:250px; min-width:210px; flex-shrink:0; display:flex; flex-direction:column; border-left:1px solid rgba(180,140,60,0.08); background:#080812; overflow-y:auto; }
+  .ss-section { padding:12px 14px; border-bottom:1px solid rgba(255,255,255,0.04); display:flex; flex-direction:column; gap:8px; }
+  .ss-section-title { font-family:var(--font-display); font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); margin-bottom:2px; }
+  .ss-row { display:flex; align-items:center; gap:8px; }
+  .ss-label { font-size:11px; color:#555; flex-shrink:0; width:52px; }
+  .ss-select { flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:6px; color:#ccc; font-family:var(--font-body); font-size:12px; padding:5px 8px; outline:none; cursor:pointer; }
+  .ss-status-bar { margin-top:auto; padding:8px 14px; font-size:10px; font-family:var(--font-mono); color:#3a3530; border-top:1px solid rgba(255,255,255,0.03); flex-shrink:0; }
+
+  /* ── MODAL ── */
+  .modal-overlay { display:none; position:fixed; inset:0; z-index:600; background:rgba(0,0,0,0.9); backdrop-filter:blur(8px); align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:#0d0d1e; border:1px solid rgba(200,168,75,0.22); border-radius:18px; padding:26px; max-width:540px; width:93%; max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; gap:16px; }
+  .modal-title { font-family:var(--font-display); font-size:16px; font-weight:700; color:var(--gold2); display:flex; align-items:center; gap:8px; }
+  .modal-desc { font-size:12px; color:var(--text3); }
+  .modal-row { display:flex; gap:8px; align-items:center; }
+  .modal-label { font-size:12px; color:var(--text2); width:90px; flex-shrink:0; }
+  .modal-select { flex:1; background:#141428; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px; outline:none; font-family:var(--font-body); }
+  .modal-input { flex:1; background:#141428; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:var(--text); padding:6px 8px; font-size:12px; outline:none; font-family:var(--font-body); }
+  .modal-hint { font-size:11px; color:var(--text3); font-family:var(--font-mono); min-height:14px; }
+  .modal-actions { display:flex; gap:8px; }
+  .modal-btn { flex:1; padding:10px; border-radius:10px; border:none; font-family:var(--font-display); font-size:12px; font-weight:700; cursor:pointer; letter-spacing:0.5px; transition:all .15s; }
+  .modal-btn.primary { background:var(--gold); color:#000; }
+  .modal-btn.primary:hover { background:var(--gold2); }
+  .modal-btn.teal { background:var(--teal); color:#000; }
+  .modal-btn.teal:hover { background:#5ee0c0; }
+  .modal-btn.cancel { background:transparent; border:1px solid rgba(255,255,255,0.1); color:var(--text2); }
+  .modal-btn.cancel:hover { color:var(--text); }
+  .modal-status { font-size:11px; color:var(--gold); font-family:var(--font-mono); min-height:14px; }
+
+  /* Tab switcher in modal */
+  .tab-switcher { display:flex; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:3px; gap:3px; }
+  .tab-switcher button { flex:1; padding:6px 10px; border-radius:5px; border:none; background:transparent; color:var(--text3); font-family:var(--font-display); font-size:11px; font-weight:600; cursor:pointer; transition:all .15s; letter-spacing:0.5px; }
+  .tab-switcher button.active { background:var(--gold-dim); color:var(--gold); }
+
+  /* Mobile */
+  @media (max-width: 680px) {
+    #menu-btn { display:flex; }
+    #sidebar { position:fixed; left:0; top:0; height:100%; transform:translateX(-100%); box-shadow:4px 0 24px rgba(0,0,0,0.5); }
+    #sidebar.open { transform:translateX(0); }
+    #overlay.open { display:block; }
+    .suggestions { flex-wrap:nowrap; overflow-x:auto; padding-bottom:10px; scrollbar-width:none; }
+    .suggestions::-webkit-scrollbar { display:none; }
+    .suggest-chip { flex-shrink:0; }
+    #messages { padding:16px 14px 12px; }
+    #input-area { padding:0 10px 14px; }
+    .ss-left, .ss-right { display:none; }
+  }
+
+  /* ── WELCOME SPLASH ── */
+  #welcome-splash {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    padding:32px 24px; overflow-y:auto;
+  }
+  #welcome-inner {
+    display:flex; flex-direction:column; align-items:center;
+    gap:12px; max-width:560px; width:100%; text-align:center;
+  }
+  #welcome-logo {
+    font-size:38px; line-height:1; margin-bottom:4px;
+    filter:drop-shadow(0 0 18px rgba(200,168,75,0.35));
+  }
+  #welcome-heading {
+    font-family:var(--font-display); font-size:26px; font-weight:700;
+    color:var(--gold2); letter-spacing:1px; margin:0;
+  }
+  #welcome-sub {
+    font-size:14px; color:var(--text2); font-family:var(--font-body);
+    margin:0 0 10px; line-height:1.5;
+  }
+  #welcome-chips {
+    display:grid; grid-template-columns:1fr 1fr; gap:9px; width:100%; margin-top:6px;
+  }
+  .w-chip {
+    padding:13px 16px; border-radius:12px; border:1px solid var(--border2);
+    background:var(--bg2); color:var(--text2); font-family:var(--font-body);
+    font-size:13px; cursor:pointer; transition:all .16s; text-align:left;
+    line-height:1.4; appearance:none;
+  }
+  .w-chip:hover {
+    background:var(--bg3); border-color:rgba(200,168,75,0.35);
+    color:var(--text); transform:translateY(-1px);
+    box-shadow:0 4px 16px rgba(0,0,0,0.35);
+  }
+  @media(max-width:480px){
+    #welcome-chips { grid-template-columns:1fr; }
+    #welcome-heading { font-size:21px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Scripture Generator Modal -->
+<div id="scripture-modal" class="modal-overlay" onclick="if(event.target===this)closeScriptureModal()">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="modal-title" id="scripture-modal-title">📖 Scripture Video Generator</div>
+      <button onclick="closeScriptureModal()" style="background:transparent;border:none;color:var(--text3);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+
+    <div class="tab-switcher" id="scripture-tab-switcher">
+      <button class="active" onclick="setScriptureTab('quran',this)">☪ Quran</button>
+      <button onclick="setScriptureTab('bible',this)">✝ Bible (KJV)</button>
+    </div>
+
+    <div class="modal-desc" id="scripture-modal-desc">Select a Surah from the Holy Quran and generate a full animated video script with calm narration.</div>
+
+    <!-- Quran Fields -->
+    <div id="quran-fields">
+      <div class="modal-row">
+        <label class="modal-label">Surah</label>
+        <select id="q-surah" class="modal-select" onchange="onSurahChange()">
+          <option value="1">1. Al-Fatihah (The Opening)</option>
+          <option value="2">2. Al-Baqarah (The Cow)</option>
+          <option value="3">3. Al-Imran (Family of Imran)</option>
+          <option value="4">4. An-Nisa (The Women)</option>
+          <option value="5">5. Al-Maidah (The Table Spread)</option>
+          <option value="6">6. Al-An'am (The Cattle)</option>
+          <option value="7">7. Al-A'raf (The Heights)</option>
+          <option value="9">9. At-Tawbah (The Repentance)</option>
+          <option value="10">10. Yunus (Jonah)</option>
+          <option value="12">12. Yusuf (Joseph)</option>
+          <option value="13">13. Ar-Ra'd (The Thunder)</option>
+          <option value="14">14. Ibrahim (Abraham)</option>
+          <option value="17">17. Al-Isra (The Night Journey)</option>
+          <option value="18">18. Al-Kahf (The Cave)</option>
+          <option value="19">19. Maryam (Mary)</option>
+          <option value="20">20. Ta-Ha</option>
+          <option value="24">24. An-Nur (The Light)</option>
+          <option value="25">25. Al-Furqan (The Criterion)</option>
+          <option value="29">29. Al-Ankabut (The Spider)</option>
+          <option value="31">31. Luqman</option>
+          <option value="32">32. As-Sajdah (The Prostration)</option>
+          <option value="36">36. Ya-Sin</option>
+          <option value="39">39. Az-Zumar (The Crowds)</option>
+          <option value="41">41. Fussilat (Explained in Detail)</option>
+          <option value="42">42. Ash-Shura (The Consultation)</option>
+          <option value="44">44. Ad-Dukhan (The Smoke)</option>
+          <option value="45">45. Al-Jathiyah (The Crouching)</option>
+          <option value="47">47. Muhammad</option>
+          <option value="48">48. Al-Fath (The Victory)</option>
+          <option value="49">49. Al-Hujurat (The Rooms)</option>
+          <option value="50">50. Qaf</option>
+          <option value="51">51. Adh-Dhariyat (The Winds)</option>
+          <option value="52">52. At-Tur (The Mount)</option>
+          <option value="53">53. An-Najm (The Star)</option>
+          <option value="54">54. Al-Qamar (The Moon)</option>
+          <option value="55">55. Ar-Rahman (The Most Gracious)</option>
+          <option value="56">56. Al-Waqi'ah (The Event)</option>
+          <option value="57">57. Al-Hadid (The Iron)</option>
+          <option value="58">58. Al-Mujadila (The Pleading)</option>
+          <option value="59">59. Al-Hashr (The Exile)</option>
+          <option value="60">60. Al-Mumtahanah</option>
+          <option value="61">61. As-Saff (The Ranks)</option>
+          <option value="62">62. Al-Jumuah (Friday)</option>
+          <option value="63">63. Al-Munafiqun</option>
+          <option value="64">64. At-Taghabun (Mutual Disillusion)</option>
+          <option value="65">65. At-Talaq (Divorce)</option>
+          <option value="66">66. At-Tahrim (The Prohibition)</option>
+          <option value="67">67. Al-Mulk (The Sovereignty)</option>
+          <option value="68">68. Al-Qalam (The Pen)</option>
+          <option value="69">69. Al-Haqqah (The Reality)</option>
+          <option value="70">70. Al-Ma'arij (The Ascending Stairways)</option>
+          <option value="71">71. Nuh (Noah)</option>
+          <option value="72">72. Al-Jinn (The Jinn)</option>
+          <option value="73">73. Al-Muzzammil (The Enshrouded One)</option>
+          <option value="74">74. Al-Muddaththir (The Cloaked One)</option>
+          <option value="75">75. Al-Qiyamah (The Resurrection)</option>
+          <option value="76">76. Al-Insan (The Human)</option>
+          <option value="78">78. An-Naba (The Tidings)</option>
+          <option value="79">79. An-Nazi'at (Those who Drag Forth)</option>
+          <option value="80">80. Abasa (He Frowned)</option>
+          <option value="81">81. At-Takwir (The Folding Up)</option>
+          <option value="82">82. Al-Infitar (The Cleaving)</option>
+          <option value="84">84. Al-Inshiqaq (The Splitting Open)</option>
+          <option value="85">85. Al-Buruj (The Mansions of Stars)</option>
+          <option value="86">86. At-Tariq (The Morning Star)</option>
+          <option value="87">87. Al-A'la (The Most High)</option>
+          <option value="88">88. Al-Ghashiyah (The Overwhelming)</option>
+          <option value="89">89. Al-Fajr (The Dawn)</option>
+          <option value="90">90. Al-Balad (The City)</option>
+          <option value="91">91. Ash-Shams (The Sun)</option>
+          <option value="92">92. Al-Layl (The Night)</option>
+          <option value="93">93. Ad-Duha (The Morning Hours)</option>
+          <option value="94">94. Ash-Sharh (The Relief)</option>
+          <option value="95">95. At-Tin (The Fig)</option>
+          <option value="96">96. Al-Alaq (The Clot)</option>
+          <option value="97">97. Al-Qadr (The Power)</option>
+          <option value="98">98. Al-Bayyinah (The Clear Proof)</option>
+          <option value="99">99. Az-Zalzalah (The Earthquake)</option>
+          <option value="100">100. Al-Adiyat (The Courser)</option>
+          <option value="101">101. Al-Qari'ah (The Calamity)</option>
+          <option value="102">102. At-Takathur (The Rivalry in World Increase)</option>
+          <option value="103">103. Al-Asr (The Declining Day)</option>
+          <option value="104">104. Al-Humazah (The Traducer)</option>
+          <option value="105">105. Al-Fil (The Elephant)</option>
+          <option value="106">106. Quraysh</option>
+          <option value="107">107. Al-Ma'un (Small Kindnesses)</option>
+          <option value="108">108. Al-Kawthar (A River in Paradise)</option>
+          <option value="109">109. Al-Kafirun (The Disbelievers)</option>
+          <option value="110">110. An-Nasr (The Divine Support)</option>
+          <option value="111">111. Al-Masad (The Palm Fiber)</option>
+          <option value="112">112. Al-Ikhlas (The Sincerity)</option>
+          <option value="113">113. Al-Falaq (The Dawn)</option>
+          <option value="114">114. An-Nas (Mankind)</option>
+        </select>
+      </div>
+      <div class="modal-row" style="margin-top:4px;">
+        <label class="modal-label">Ayah range</label>
+        <input type="number" id="q-from" value="1" min="1" class="modal-input" style="width:65px;flex:none;" oninput="updateScripturePreview()">
+        <span style="color:var(--text3);font-size:12px;">to</span>
+        <input type="number" id="q-to" value="7" min="1" class="modal-input" style="width:65px;flex:none;" oninput="updateScripturePreview()">
+        <span id="q-ayah-hint" style="font-size:11px;color:var(--text3);">(1–7)</span>
+      </div>
+    </div>
+
+    <!-- Bible Fields -->
+    <div id="bible-fields" style="display:none;">
+      <div class="modal-row">
+        <label class="modal-label">Book</label>
+        <select id="b-book" class="modal-select" onchange="onBibleBookChange2()">
+          <optgroup label="── Old Testament ──">
+            <option value="Genesis">Genesis</option><option value="Exodus">Exodus</option>
+            <option value="Leviticus">Leviticus</option><option value="Numbers">Numbers</option>
+            <option value="Deuteronomy">Deuteronomy</option><option value="Joshua">Joshua</option>
+            <option value="Judges">Judges</option><option value="Ruth">Ruth</option>
+            <option value="1 Samuel">1 Samuel</option><option value="2 Samuel">2 Samuel</option>
+            <option value="1 Kings">1 Kings</option><option value="2 Kings">2 Kings</option>
+            <option value="Job">Job</option><option value="Psalms" selected>Psalms</option>
+            <option value="Proverbs">Proverbs</option><option value="Ecclesiastes">Ecclesiastes</option>
+            <option value="Isaiah">Isaiah</option><option value="Jeremiah">Jeremiah</option>
+            <option value="Ezekiel">Ezekiel</option><option value="Daniel">Daniel</option>
+            <option value="Jonah">Jonah</option>
+          </optgroup>
+          <optgroup label="── New Testament ──">
+            <option value="Matthew">Matthew</option><option value="Mark">Mark</option>
+            <option value="Luke">Luke</option><option value="John">John</option>
+            <option value="Acts">Acts</option><option value="Romans">Romans</option>
+            <option value="1 Corinthians">1 Corinthians</option><option value="Galatians">Galatians</option>
+            <option value="Ephesians">Ephesians</option><option value="Philippians">Philippians</option>
+            <option value="Colossians">Colossians</option><option value="Hebrews">Hebrews</option>
+            <option value="James">James</option><option value="1 Peter">1 Peter</option>
+            <option value="Revelation">Revelation</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="modal-row" style="margin-top:4px;">
+        <label class="modal-label">Chapter range</label>
+        <input type="number" id="b-from" value="1" min="1" class="modal-input" style="width:65px;flex:none;" oninput="updateScripturePreview()">
+        <span style="color:var(--text3);font-size:12px;">to</span>
+        <input type="number" id="b-to" value="5" min="1" class="modal-input" style="width:65px;flex:none;" oninput="updateScripturePreview()">
+        <span id="b-ch-hint" style="font-size:11px;color:var(--text3);">(1–150)</span>
+      </div>
+    </div>
+
+    <!-- Shared Fields -->
+    <div class="modal-row">
+      <label class="modal-label">Duration</label>
+      <select id="sc-length" class="modal-select" onchange="updateScripturePreview()">
+        <option value="5">5 minutes</option><option value="10">10 minutes</option>
+        <option value="15">15 minutes</option><option value="30">30 minutes</option>
+        <option value="60" selected>1 hour</option><option value="120">2 hours</option>
+        <option value="180">3 hours</option><option value="360">6 hours</option>
+        <option value="480">8 hours</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Style</label>
+      <select id="sc-style" class="modal-select">
+        <option value="meditation">Meditation (slow, peaceful)</option>
+        <option value="recitation">Recitation (calm, rhythmic)</option>
+        <option value="dramatic">Dramatic narrative</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Background</label>
+      <select id="sc-bg" class="modal-select">
+        <option value="stars">Starfield / Heaven</option>
+        <option value="temple">Sacred Hall / Temple</option>
+        <option value="desert">Desert / Wilderness</option>
+        <option value="ocean">Ocean / Still Waters</option>
+        <option value="mountain">Mountain Peak</option>
+        <option value="garden">Garden / Paradise</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <label class="modal-label">Voice (TTS)</label>
+      <select id="sc-voice" class="modal-select">
+        <option value="calm">Calm & Meditative</option>
+        <option value="deep">Deep & Resonant</option>
+        <option value="soft">Soft & Gentle</option>
+      </select>
+    </div>
+
+    <div class="modal-hint" id="sc-preview">Select scripture and duration above…</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="generateScriptureVideo()">✨ Generate Video</button>
+      <button class="modal-btn cancel" onclick="closeScriptureModal()">Cancel</button>
+    </div>
+    <div class="modal-status" id="sc-status"></div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">☽ SacredForge</div>
+      <div class="logo-sub">AI Scripture Studio · v2.0</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Scripture Source</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="scripture-btn active" onclick="setScriptureSource(this,'quran')" id="src-quran">
+          <div class="scripture-icon">☪</div>Holy Quran
+        </button>
+        <button class="scripture-btn" onclick="setScriptureSource(this,'bible')" id="src-bible">
+          <div class="scripture-icon">✝</div>Holy Bible (KJV)
+        </button>
+        <button class="scripture-btn" onclick="setScriptureSource(this,'both')" id="src-both">
+          <div class="scripture-icon">📖</div>Both Scriptures
+        </button>
+      </div>
+    </div>
+    <div class="sidebar-section" style="margin-top:4px;">
+      <div class="sidebar-label">Quick Actions</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="scripture-btn" onclick="openScriptureModal('quran')">
+          <div class="scripture-icon" style="font-size:12px;">🎬</div>Generate Quran Video
+        </button>
+        <button class="scripture-btn" onclick="openScriptureModal('bible')">
+          <div class="scripture-icon" style="font-size:12px;">🎬</div>Generate Bible Video
+        </button>
+        <button class="scripture-btn" onclick="openStudio()">
+          <div class="scripture-icon" style="font-size:12px;">🎨</div>Open Studio
+        </button>
+      </div>
+    </div>
+    <div class="sidebar-section" style="margin-top:4px;">
+      <div class="sidebar-label">AI Engine</div>
+      <!-- Tier toggle -->
+      <div style="display:flex;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border2);margin-bottom:8px;">
+        <button id="tier-free-btn" onclick="setTier('free')"
+          style="flex:1;padding:7px 0;border:none;background:var(--gold-dim);color:var(--gold);font-family:var(--font-display);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.5px;border-right:1px solid var(--border2);transition:all .15s;">
+          ✦ FREE
+        </button>
+        <button id="tier-paid-btn" onclick="setTier('paid')"
+          style="flex:1;padding:7px 0;border:none;background:transparent;color:var(--text3);font-family:var(--font-display);font-size:11px;font-weight:600;cursor:pointer;letter-spacing:0.5px;transition:all .15s;">
+          ★ PRO
+        </button>
+      </div>
+      <!-- Free tier panel -->
+      <div id="tier-free-panel">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(61,201,168,0.3);background:var(--teal-dim);font-size:12px;color:var(--text2);margin-bottom:8px;">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--teal);flex-shrink:0;box-shadow:0 0 5px var(--teal);"></div>
+          <span style="color:var(--teal);font-weight:500;flex:1;">Pollinations AI</span>
+          <span id="pollinations-key-badge" style="font-size:10px;font-family:var(--font-mono);background:var(--teal-dim);color:var(--teal);padding:1px 5px;border-radius:3px;">FREE</span>
+        </div>
+        <div style="position:relative;">
+          <input id="pollinations-api-key" type="password" placeholder="Pollinations key (optional)"
+            style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:7px 34px 7px 10px;outline:none;transition:border-color .2s;"
+            oninput="savePollinationsKey(this.value)"
+            onfocus="this.style.borderColor='rgba(61,201,168,0.5)'"
+            onblur="this.style.borderColor=''"
+          >
+          <button onclick="togglePollinationsKeyVisibility()" title="Show/hide key"
+            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0;line-height:1;" id="pollinations-eye-btn">👁</button>
+        </div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:5px;padding:0 2px;line-height:1.5;">Works without a key · Add yours for higher limits</div>
+      </div>
+      <!-- Paid tier panel -->
+      <div id="tier-paid-panel" style="display:none;">
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(200,168,75,0.3);background:var(--gold-dim);font-size:12px;color:var(--text2);">
+          <div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;box-shadow:0 0 5px var(--gold);"></div>
+          <span style="color:var(--gold);font-weight:500;flex:1;">Claude Sonnet 4</span>
+          <span style="font-size:10px;font-family:var(--font-mono);background:rgba(200,168,75,0.2);color:var(--gold);padding:1px 5px;border-radius:3px;">PRO</span>
+        </div>
+        <div style="margin-top:8px;">
+          <div style="position:relative;">
+            <input id="claude-api-key" type="password" placeholder="sk-ant-… API key"
+              style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-mono);font-size:11px;padding:7px 34px 7px 10px;outline:none;transition:border-color .2s;"
+              oninput="saveApiKey(this.value)"
+              onfocus="this.style.borderColor='rgba(200,168,75,0.5)'"
+              onblur="this.style.borderColor=''"
+            >
+            <button onclick="toggleClaudeKeyVisibility()" title="Show/hide key"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:0;line-height:1;" id="claude-eye-btn">👁</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:4px;padding:0 2px;line-height:1.5;">Key stored in memory only · Never sent elsewhere</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="status-row">
+        <div class="status-dot"></div>
+        Online · Sacred AI · Active
+      </div>
+    </div>
+  </aside>
+
+  <div id="overlay" onclick="closeSidebar()"></div>
+
+  <main id="main">
+    <header id="header">
+      <button id="menu-btn" onclick="toggleSidebar()">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="8.25" width="14" height="1.5" rx="1" fill="currentColor"/><rect x="2" y="12.5" width="14" height="1.5" rx="1" fill="currentColor"/></svg>
+      </button>
+      <div class="header-title" id="header-title">SacredForge AI · Quran & Bible Studio</div>
+      <div class="header-actions">
+        <button class="header-chip hide-mobile" onclick="newChat()">+ New</button>
+        <button class="header-chip" onclick="openScriptureModal('quran')" title="Generate Quran Video">
+          <span class="dot"></span><span>☪ Quran</span>
+        </button>
+        <button class="header-chip" onclick="openScriptureModal('bible')" title="Generate Bible Video">
+          <span class="dot"></span><span>✝ Bible</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Welcome splash -->
+    <div id="welcome-splash">
+      <div id="welcome-inner">
+        <div id="welcome-logo">&#9789;</div>
+        <h1 id="welcome-heading">SacredForge AI</h1>
+        <p id="welcome-sub">Your Islamic &amp; Christian scripture studio</p>
+        <div id="welcome-chips">
+          <button class="w-chip" onclick="splashPrompt(this)">&#9770; Generate a Quran video</button>
+          <button class="w-chip" onclick="splashPrompt(this)">&#10013; Generate a Bible video</button>
+          <button class="w-chip" onclick="splashPrompt(this)">&#128214; Explain Surah Al-Ikhlas</button>
+          <button class="w-chip" onclick="splashPrompt(this)">&#127774; Surah Ar-Rahman meditation</button>
+          <button class="w-chip" onclick="splashPrompt(this)">&#128057; Psalm 23 still waters scene</button>
+          <button class="w-chip" onclick="splashPrompt(this)">&#127775; Open Animation Studio</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="messages" aria-live="polite" style="display:none;"></div>
+
+    <div class="suggestions" id="suggestions" style="display:none;"></div>
+
+    <!-- TTS Panel -->
+    <div id="tts-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="tts-title">🔊 Voice Studio</div>
+        <button onclick="closeTTSPanel()" style="background:transparent;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:2px 6px;">✕</button>
+      </div>
+      <textarea id="tts-text" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body);font-size:13px;padding:10px 13px;resize:vertical;min-height:80px;max-height:160px;outline:none;line-height:1.6;" placeholder="Text to speak…"></textarea>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <select id="tts-voice" class="tts-select" style="flex:1;min-width:120px;"></select>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-family:var(--font-mono);">
+          Rate <input type="range" id="tts-rate" class="tts-slider" min="0.4" max="1.2" step="0.05" value="0.72">
+          <span id="tts-rate-val" style="width:28px;">0.72×</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-family:var(--font-mono);">
+          Pitch <input type="range" id="tts-pitch" class="tts-slider" min="0.5" max="1.2" step="0.05" value="0.9">
+          <span id="tts-pitch-val" style="width:18px;">0.9</span>
+        </div>
+        <button class="tts-btn primary" onclick="ttsBrowserSpeak()" id="tts-speak-btn">▶ Speak</button>
+        <button class="tts-btn secondary" onclick="ttsStop()">■ Stop</button>
+      </div>
+      <div class="tts-status" id="tts-browser-status"></div>
+    </div>
+
+    <div id="input-area">
+      <div class="input-box">
+        <textarea id="chat-input" placeholder="Ask about Quran, Bible, generate a video script, or describe what you need…" rows="1" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+        <div class="input-toolbar">
+          <button class="input-action-btn" onclick="toggleTTSPanel()" id="tts-toggle-btn" title="Voice Studio">🔊</button>
+          <button class="input-action-btn" onclick="openScriptureModal('quran')" title="Quran Video">☪</button>
+          <button class="input-action-btn" onclick="openScriptureModal('bible')" title="Bible Video">✝</button>
+          <button class="input-action-btn" onclick="openStudio()" title="Open Animation Studio">🎬</button>
+          <div class="input-spacer"></div>
+          <button id="send-btn" onclick="sendMessage()">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 1l11 5.5L1 12V7.5l7-2-7-2V1z" fill="currentColor"/></svg>
+            SEND
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── SCRIPTURE STUDIO ── -->
+<div id="scripture-studio">
+  <div class="ss-topbar">
+    <div class="ss-logo">🌙 SacredForge <span style="font-size:10px;color:var(--text3);font-weight:400;letter-spacing:.5px;">Studio</span></div>
+    <div style="font-size:11px;color:#3a3530;font-family:var(--font-mono);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="ss-project-name">Untitled Project</div>
+    <div class="ss-spacer"></div>
+    <button class="ss-top-btn" onclick="ssParse()" id="ss-parse-btn">⚡ Parse</button>
+    <button class="ss-top-btn primary" onclick="ssPlay()" id="ss-render-btn" disabled>▶ Play All</button>
+    <button class="ss-top-btn teal" onclick="openScriptureModal('quran')">☪ Quran</button>
+    <button class="ss-top-btn" onclick="openScriptureModal('bible')" style="border-color:rgba(200,168,75,0.3);color:var(--gold);">✝ Bible</button>
+    <button class="ss-top-btn" onclick="ssExportSRT()" id="ss-srt-btn" disabled>📄 SRT</button>
+    <button class="ss-top-btn danger" onclick="closeStudio()">✕ Close</button>
+  </div>
+  <div class="ss-body">
+    <div class="ss-left">
+      <div class="ss-panel-header">Script <span id="ss-scene-count" style="color:var(--gold);font-family:var(--font-mono);font-size:10px;">0 scenes</span></div>
+      <textarea id="ss-script" class="ss-script-editor" placeholder="[SCENE 1: Desert Sunset - Opening]
+CHARACTER: Narrator
+DIALOGUE: In the name of Allah, the Most Gracious, the Most Merciful.
+ACTION: Camera pans over golden desert dunes. Stars emerge.
+MOOD: spiritual
+BACKGROUND: desert
+DURATION: 14
+
+Use ☪ Quran or ✝ Bible buttons to auto-generate a script."></textarea>
+      <div class="ss-panel-header">Scenes <span id="ss-scene-list-count" style="color:var(--gold);"></span></div>
+      <div class="ss-scene-list" id="ss-scene-list"></div>
+    </div>
+
+    <div class="ss-canvas-wrap">
+      <canvas id="ss-canvas" width="854" height="480"></canvas>
+      <div class="ss-playbar">
+        <button class="ss-play-btn" id="ss-play-btn" onclick="ssTogglePlay()">▶</button>
+        <button class="ss-play-btn" onclick="ssSkipBack()" style="font-size:11px;width:28px;height:28px;">⏮</button>
+        <button class="ss-play-btn" onclick="ssSkipFwd()" style="font-size:11px;width:28px;height:28px;">⏭</button>
+        <div class="ss-timeline" id="ss-timeline" onclick="ssSeek(event)">
+          <div class="ss-timeline-fill" id="ss-timeline-fill"></div>
+        </div>
+        <div class="ss-scene-badge" id="ss-scene-badge">0/0</div>
+        <div class="ss-time-label" id="ss-time-label">0:00 / 0:00</div>
+      </div>
+    </div>
+
+    <div class="ss-right">
+      <div class="ss-section">
+        <div class="ss-section-title">Visual Style</div>
+        <div class="ss-row"><label class="ss-label">BG</label>
+          <select class="ss-select" id="ss-bg-style">
+            <option value="auto">Auto (from script)</option>
+            <option value="stars">Starfield</option><option value="temple">Sacred Hall</option>
+            <option value="desert">Desert</option><option value="ocean">Ocean</option>
+            <option value="mountain">Mountain</option><option value="garden">Garden</option>
+          </select>
+        </div>
+        <div class="ss-row"><label class="ss-label">Text</label>
+          <select class="ss-select" id="ss-text-overlay">
+            <option value="fullscreen">Full-screen verse</option>
+            <option value="subtitle">Subtitle (bottom)</option>
+            <option value="dialogue">Dialogue box</option>
+          </select>
+        </div>
+        <div class="ss-row"><label class="ss-label">Font</label>
+          <select class="ss-select" id="ss-font-style">
+            <option value="serif">Serif (sacred)</option>
+            <option value="sans">Sans (clean)</option>
+          </select>
+        </div>
+      </div>
+      <div class="ss-section">
+        <div class="ss-section-title">Animation</div>
+        <div class="ss-row"><label class="ss-label">Speed</label>
+          <input type="range" class="tts-slider" id="ss-anim-speed" min="0.3" max="2" step="0.1" value="1" style="width:65px;">
+          <span style="font-size:11px;color:#555;" id="ss-speed-val">1×</span>
+        </div>
+        <div class="ss-row" style="flex-wrap:wrap;gap:6px;margin-top:2px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#777;cursor:pointer;"><input type="checkbox" id="ss-particles" checked style="accent-color:var(--gold);cursor:pointer;"> Particles</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#777;cursor:pointer;"><input type="checkbox" id="ss-tts-narrate" checked style="accent-color:var(--gold);cursor:pointer;"> Auto-voice</label>
+        </div>
+      </div>
+      <div class="ss-section">
+        <div class="ss-section-title">Scene Duration</div>
+        <div class="ss-row"><label class="ss-label">Default</label>
+          <select class="ss-select" id="ss-default-dur">
+            <option value="8">8s (normal)</option>
+            <option value="12">12s (slow)</option>
+            <option value="18" selected>18s (meditation)</option>
+            <option value="25">25s (deep)</option>
+          </select>
+        </div>
+      </div>
+      <div class="ss-section">
+        <div class="ss-section-title">Export</div>
+        <button class="ss-top-btn" style="width:100%;justify-content:center;" onclick="ssExportSRT()" id="ss-srt-btn2" disabled>📄 Export SRT Subtitles</button>
+      </div>
+      <div class="ss-status-bar" id="ss-status">Ready · Load a script to begin</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let conversationHistory = [];
+let currentSource = 'quran';
+let scriptureTabMode = 'quran';
+let currentTier = 'free';   // 'free' = Pollinations | 'paid' = Claude
+let claudeApiKey = '';
+let pollinationsApiKey = '';
+
+// ── TIER SWITCHER ───────────────────────────────────────────────────────────
+function setTier(tier) {
+  currentTier = tier;
+  const freeBtn   = document.getElementById('tier-free-btn');
+  const paidBtn   = document.getElementById('tier-paid-btn');
+  const freePanel = document.getElementById('tier-free-panel');
+  const paidPanel = document.getElementById('tier-paid-panel');
+  if (tier === 'free') {
+    freeBtn.style.background = 'var(--gold-dim)'; freeBtn.style.color = 'var(--gold)';
+    paidBtn.style.background = 'transparent';     paidBtn.style.color = 'var(--text3)';
+    freePanel.style.display  = ''; paidPanel.style.display = 'none';
+  } else {
+    paidBtn.style.background = 'var(--gold-dim)'; paidBtn.style.color = 'var(--gold)';
+    freeBtn.style.background = 'transparent';     freeBtn.style.color = 'var(--text3)';
+    freePanel.style.display  = 'none'; paidPanel.style.display = '';
+    const saved = document.getElementById('claude-api-key');
+    if (saved && claudeApiKey) saved.value = claudeApiKey;
+  }
+  updateStatusFooter();
+}
+
+function saveApiKey(val) { claudeApiKey = val.trim(); }
+
+function savePollinationsKey(val) {
+  pollinationsApiKey = val.trim();
+  const badge = document.getElementById('pollinations-key-badge');
+  if (badge) badge.textContent = pollinationsApiKey ? 'KEY SET' : 'FREE';
+}
+
+function togglePollinationsKeyVisibility() {
+  const inp = document.getElementById('pollinations-api-key');
+  const btn = document.getElementById('pollinations-eye-btn');
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  if (btn) btn.textContent = inp.type === 'password' ? '\u{1F441}' : '🙈';
+}
+
+function toggleClaudeKeyVisibility() {
+  const inp = document.getElementById('claude-api-key');
+  const btn = document.getElementById('claude-eye-btn');
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  if (btn) btn.textContent = inp.type === 'password' ? '\u{1F441}' : '🙈';
+}
+
+function updateStatusFooter() {
+  const dot = document.querySelector('.status-dot');
+  const label = document.querySelector('.status-row');
+  if (!dot || !label) return;
+  if (currentTier === 'free') {
+    dot.style.background = 'var(--teal)'; dot.style.boxShadow = '0 0 5px var(--teal)';
+    label.childNodes[label.childNodes.length - 1].textContent = ' Pollinations AI · Free';
+  } else {
+    dot.style.background = 'var(--gold)'; dot.style.boxShadow = '0 0 5px var(--gold)';
+    label.childNodes[label.childNodes.length - 1].textContent = ' Claude Sonnet 4 · Pro';
+  }
+}
+
+// ── SCRIPTURE DATA ──────────────────────────────────────────────────────────
+const QURAN_SURAHS = {
+  1:  { name:'Al-Fatihah', ayahs:7, topic:'The Opening' },
+  2:  { name:'Al-Baqarah', ayahs:286, topic:'Guidance for Humanity' },
+  3:  { name:'Al-Imran', ayahs:200, topic:'Family of Imran' },
+  36: { name:'Ya-Sin', ayahs:83, topic:'The Heart of the Quran' },
+  55: { name:'Ar-Rahman', ayahs:78, topic:'The Most Gracious' },
+  67: { name:'Al-Mulk', ayahs:30, topic:'The Sovereignty' },
+  112:{ name:'Al-Ikhlas', ayahs:4, topic:'Pure Monotheism' },
+  113:{ name:'Al-Falaq', ayahs:5, topic:'Dawn Protection' },
+  114:{ name:'An-Nas', ayahs:6, topic:'Mankind Protection' },
+  93: { name:'Ad-Duha', ayahs:11, topic:'The Morning Light' },
+  94: { name:'Ash-Sharh', ayahs:8, topic:'The Relief' },
+  97: { name:'Al-Qadr', ayahs:5, topic:'Night of Power' },
+  18: { name:'Al-Kahf', ayahs:110, topic:'The Cave' },
+  19: { name:'Maryam', ayahs:98, topic:'Mary' },
+  103:{ name:'Al-Asr', ayahs:3, topic:'Time' },
+};
+
+// Key Quranic verses (English translation — Sahih International)
+const QURAN_VERSES = {
+  1:  ["In the name of Allah, the Entirely Merciful, the Especially Merciful.","[All] praise is [due] to Allah, Lord of the worlds —","The Entirely Merciful, the Especially Merciful,","Sovereign of the Day of Recompense.","It is You we worship and You we ask for help.","Guide us to the straight path —","The path of those upon whom You have bestowed favor, not of those who have evoked [Your] anger or of those who are astray."],
+  36: ["Ya, Seen. By the wise Quran,","Indeed you are among the messengers on a straight path.","It is a revelation of the Exalted in Might, the Merciful.","That you may warn a people whose forefathers were not warned, so they are unaware.","Indeed, it is We who bring the dead to life and record what they have put forth and what they left behind.","Have they not considered how many generations We destroyed before them — that they to them will not return?","And all of them will yet be brought present before Us."],
+  55: ["The Most Merciful — Taught the Quran, Created man, Taught him eloquence.","The sun and the moon move by precise calculation.","So which of the favors of your Lord would you deny?","He created man from clay like pottery.","The stars and trees prostrate before Him.","And He raised the heavens and established the balance.","So which of the favors of your Lord would you deny?","For whoever fears the position of his Lord are two gardens."],
+  112:["Say, He is Allah, [who is] One,","Allah, the Eternal Refuge.","He neither begets nor is born,","Nor is there to Him any equivalent."],
+  97: ["Indeed, We sent the Quran down during the Night of Decree.","And what can make you know what is the Night of Decree?","The Night of Decree is better than a thousand months.","The angels and the Spirit descend therein by permission of their Lord for every matter.","Peace it is until the emergence of dawn."],
+  93: ["By the morning brightness and by the night when it covers with darkness,","Your Lord has not taken leave of you, nor has He detested [you].","And the Hereafter is better for you than the first [life].","And your Lord is going to give you, and you will be satisfied.","Did He not find you an orphan and give [you] refuge?","And He found you lost and guided [you],","And He found you poor and made [you] self-sufficient."],
+  103:["By time,","Indeed, mankind is in loss,","Except for those who have believed and done righteous deeds and advised each other to truth and advised each other to patience."],
+  67: ["Blessed is He in whose hand is dominion, and He is over all things competent.","[He] who created death and life to test you [as to] which of you is best in deed — and He is the Exalted in Might, the Forgiving.","[And] who created seven heavens in layers. You do not see in the creation of the Most Merciful any inconsistency.","Do you feel secure that He who [holds authority] in the heaven would not cause the earth to swallow you?","Say, It is He who has produced you and made for you hearing and vision and hearts; little are you grateful."],
+  18: ["All praise is due to Allah, who has sent down upon His Servant the Book and has not made therein any deviance.","Or do the people of the towns feel secure that Our punishment will not come upon them at night while they are sleeping?","And recite to them the news of two men: We gave one of them two gardens of grapevines and bordered them with palm trees.","And present to them the example of the life of this world, [its being] like rain which We send down from the sky.","Indeed, those who have believed and done righteous deeds — they will have the Gardens of Paradise as a lodging."],
+};
+
+const BIBLE_CHAPTERS_COUNT = {
+  'Genesis':50,'Exodus':40,'Psalms':150,'Proverbs':31,'Isaiah':66,'Matthew':28,'John':21,'Romans':16,'Revelation':22,'Ephesians':6,'Philippians':4,'Hebrews':13,'James':5,'1 Peter':5,'Mark':16,'Luke':24,'Acts':28,'1 Corinthians':16,'Galatians':6,'Colossians':4,'Daniel':12,'Ruth':4,'Job':42,'Ecclesiastes':12,'Jeremiah':52,'Ezekiel':48,'Joshua':24,'Judges':21,'1 Samuel':31,'2 Samuel':24,'1 Kings':22,'2 Kings':25,'Jonah':4,'1 Corinthians':16,'Leviticus':27,'Numbers':36,'Deuteronomy':34
+};
+
+const BIBLE_VERSES = {
+  'Psalms': {
+    23:{ title:"The Lord is My Shepherd", verses:["The LORD is my shepherd; I shall not want.","He maketh me to lie down in green pastures: he leadeth me beside the still waters.","He restoreth my soul: he leadeth me in the paths of righteousness for his name's sake.","Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me.","Thou preparest a table before me in the presence of mine enemies: thou anointest my head with oil.","Surely goodness and mercy shall follow me all the days of my life: and I will dwell in the house of the LORD for ever."] },
+    91:{ title:"Dwelling in Safety", verses:["He that dwelleth in the secret place of the most High shall abide under the shadow of the Almighty.","I will say of the LORD, He is my refuge and my fortress: my God; in him will I trust.","He shall cover thee with his feathers, and under his wings shalt thou trust: his truth shall be thy shield and buckler.","Thou shalt not be afraid for the terror by night; nor for the arrow that flieth by day.","Because he hath set his love upon me, therefore will I deliver him: I will set him on high, because he hath known my name.","He shall call upon me, and I will answer him: I will be with him in trouble; I will deliver him, and honour him."] },
+    46:{ title:"God is Our Refuge", verses:["God is our refuge and strength, a very present help in trouble.","Therefore will not we fear, though the earth be removed, and though the mountains be carried into the midst of the sea.","There is a river, the streams whereof shall make glad the city of God, the holy place of the tabernacles of the most High.","The LORD of hosts is with us; the God of Jacob is our refuge.","Be still, and know that I am God: I will be exalted among the heathen, I will be exalted in the earth."] },
+    139:{ title:"You Have Searched Me", verses:["O LORD, thou hast searched me, and known me.","Thou knowest my downsitting and mine uprising, thou understandest my thought afar off.","Whither shall I go from thy spirit? or whither shall I flee from thy presence?","For thou hast possessed my reins: thou hast covered me in my mother's womb.","How precious also are thy thoughts unto me, O God! how great is the sum of them!"] },
+  },
+  'default': ["Thus saith the LORD: Hearken unto my voice, and I will be your God, and ye shall be my people.","The LORD is good; his mercy endureth for ever; and his truth endureth to all generations.","Blessed is the man that trusteth in the LORD, and whose hope the LORD is.","For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil.","Call unto me, and I will answer thee, and shew thee great and mighty things, which thou knowest not.","I am the way, the truth, and the life: no man cometh unto the Father, but by me.","For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.","Fear thou not; for I am with thee: be not dismayed; for I am thy God: I will strengthen thee.","For by grace are ye saved through faith; and that not of yourselves: it is the gift of God.","The peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus."],
+};
+
+// ── SYSTEM PROMPT ──────────────────────────────────────────────────────────
+function getSystemPrompt() {
+  return `You are SacredForge AI, a specialized assistant for creating beautiful Islamic and Christian scripture content — particularly animated video scripts, spiritual explanations, and devotional material.
+
+You have deep knowledge of:
+- The Holy Quran (all 114 Surahs) — their themes, tafsir, and context
+- The Holy Bible (KJV) — Old and New Testaments
+- Islamic traditions, dua, and supplications
+- Christian theology and devotional writing
+
+When generating video scripts, always use this exact format:
+[SCENE N: Title - Reference]
+CHARACTER: Narrator
+DIALOGUE: [Verse or spiritual text here]
+ACTION: [Camera/scene description]
+MOOD: [spiritual|hopeful|peaceful|worship|dramatic]
+BACKGROUND: [stars|temple|desert|ocean|mountain|garden]
+DURATION: [seconds]
+
+For calm, meditative content use longer durations (14–20s).
+Always write with reverence, beauty, and clarity.
+When asked about scripture, provide thoughtful, respectful, and accurate explanations.
+When generating TTS narration scripts, use a calm, meditative tone with natural pauses indicated by em-dashes.
+
+If the user asks to generate a video, respond with [SCRIPT READY] at the end after the full script.`;
+}
+
+// ── AI CALL ─────────────────────────────────────────────────────────────────
+async function callAI(messages) {
+  if (currentTier === 'paid') {
+    return callClaude(messages);
+  }
+  return callPollinations(messages);
+}
+
+// FREE tier — Pollinations AI (no key required)
+// Uses the OpenAI-compatible endpoint at pollinations.ai
+async function callPollinations(messages) {
+  // Build OpenAI-style messages with system prompt prepended
+  const payload = [
+    { role: 'system', content: getSystemPrompt() },
+    ...messages,
+  ];
+  const key = pollinationsApiKey.trim();
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+  const res = await fetch('https://text.pollinations.ai/openai', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: 'openai',
+      messages: payload,
+      max_tokens: 4000,
+      private: true,
+    }),
+  });
+  const rawText = await res.text();
+  if (!res.ok) {
+    let msg = 'Pollinations error ' + res.status;
+    try { const e = JSON.parse(rawText); msg = e.error?.message || msg; } catch(_) {}
+    throw new Error(msg);
+  }
+  // Pollinations can return either an OpenAI-style JSON object OR raw plain text
+  try {
+    const data = JSON.parse(rawText);
+    if (data.error) throw new Error(data.error.message);
+    const content = data.choices?.[0]?.message?.content;
+    if (content) return content;
+    if (typeof data === 'string') return data;
+  } catch(_) {}
+  // Plain-text fallback
+  return rawText.trim();
+}
+
+// PAID tier — Anthropic Claude Sonnet 4 (requires API key)
+async function callClaude(messages) {
+  if (!claudeApiKey) throw new Error('Please enter your Anthropic API key in the PRO panel.');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': claudeApiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-calls': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      system: getSystemPrompt(),
+      messages,
+    }),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(()=>({}));
+    throw new Error(e.error?.message || 'Claude API error ' + res.status);
+  }
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.map(c=>c.text||'').join('');
+}
+
+// ── MESSAGE HELPERS ─────────────────────────────────────────────────────────
+function formatResponse(text) {
+  text = text.replace(/```[\w]*\n?([\s\S]*?)```/g, (_,c)=>'<pre>'+c.replace(/</g,'&lt;').replace(/>/g,'&gt;').trim()+'</pre>');
+  text = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  text = text.replace(/\*(.*?)\*/g,'<em>$1</em>');
+  text = text.replace(/^#{1,3}\s+(.+)$/gm,'<strong style="display:block;font-family:var(--font-display);font-size:14px;color:var(--gold2);margin:10px 0 4px;letter-spacing:0.5px;">$1</strong>');
+  text = text.replace(/^\d+\.\s+(.+)$/gm,'<span style="display:block;padding:3px 0 3px 12px;border-left:2px solid var(--gold);margin:4px 0;">$1</span>');
+  text = text.replace(/^[-•]\s+(.+)$/gm,'<span style="display:block;padding:3px 0 3px 12px;border-left:2px solid var(--gold);margin:4px 0;">$1</span>');
+  text = text.replace(/\n{2,}/g,'<br><br>').replace(/\n/g,'<br>');
+  return text;
+}
+
+function addMessage(role, text) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const now = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  const isAI = role === 'sf';
+  const hasScript = isAI && text.includes('[SCRIPT READY]');
+  div.innerHTML = `
+    <div class="${isAI ? 'msg-avatar sf' : 'msg-avatar user-av'}">${isAI ? '☽' : 'Me'}</div>
+    <div class="msg-content">
+      <div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        ${isAI ? `<button class="speak-btn" onclick="ttsFromMessage(this)">🔊 Speak</button>` : ''}
+        ${hasScript ? `<button class="studio-btn" onclick="openStudioWithScript(this)">🎬 Open in Studio</button>` : ''}
+      </div>
+      <div class="msg-meta">${isAI ? 'SacredForge AI · '+now : 'You · '+now}</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg sf'; div.id = 'typing-msg';
+  div.innerHTML = `<div class="msg-avatar sf">☽</div><div class="msg-content"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTyping() { const t=document.getElementById('typing-msg'); if(t)t.remove(); }
+
+// ── SEND ────────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || input.disabled) return;
+  addMessage('user', text);
+  input.value = ''; input.style.height = '';
+  input.disabled = true;
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('suggestions').style.display = 'none';
+  conversationHistory.push({ role:'user', content:text });
+  hideSplash();
+  showTyping();
+  try {
+    const reply = await callAI(conversationHistory);
+    removeTyping();
+    if (!reply || !reply.trim()) {
+      addMessage('sf', '⚠️ The AI returned an empty response. Please try again.');
+    } else {
+      conversationHistory.push({ role:'assistant', content:reply });
+      addMessage('sf', formatResponse(reply));
+    }
+  } catch(err) {
+    removeTyping();
+    addMessage('sf', '⚠️ ' + (err.message || 'Something went wrong. Please try again.'));
+  } finally {
+    input.disabled = false;
+    document.getElementById('send-btn').disabled = false;
+    input.focus();
+  }
+}
+
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,160)+'px'; }
+function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} }
+function useSuggestion(chip) { document.getElementById('chat-input').value=chip.textContent; sendMessage(); }
+function splashPrompt(btn) {
+  hideSplash();
+  document.getElementById('chat-input').value = btn.textContent.trim();
+  sendMessage();
+}
+
+function hideSplash() {
+  const splash = document.getElementById('welcome-splash');
+  const msgs   = document.getElementById('messages');
+  if (splash) splash.style.display = 'none';
+  if (msgs)   msgs.style.display   = '';
+}
+
+function newChat() {
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('messages').style.display = 'none';
+  conversationHistory.length = 0;
+  document.getElementById('suggestions').style.display = 'none';
+  const splash = document.getElementById('welcome-splash');
+  if (splash) splash.style.display = '';
+}
+
+// ── SIDEBAR ──────────────────────────────────────────────────────────────────
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+function setScriptureSource(btn, src) {
+  document.querySelectorAll('.scripture-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); currentSource = src;
+  document.getElementById('header-title').textContent = src==='quran'?'SacredForge AI · Quran Studio':src==='bible'?'SacredForge AI · Bible Studio':'SacredForge AI · Quran & Bible Studio';
+  if(window.innerWidth<=680) closeSidebar();
+}
+
+// ── SCRIPTURE MODAL ──────────────────────────────────────────────────────────
+function openScriptureModal(mode) {
+  scriptureTabMode = mode;
+  setScriptureTab(mode, null);
+  document.getElementById('scripture-modal').classList.add('open');
+  updateScripturePreview();
+}
+function closeScriptureModal() { document.getElementById('scripture-modal').classList.remove('open'); }
+
+function setScriptureTab(mode, btn) {
+  scriptureTabMode = mode;
+  document.getElementById('quran-fields').style.display = mode==='quran'?'':'none';
+  document.getElementById('bible-fields').style.display = mode==='bible'?'':'none';
+  document.getElementById('scripture-modal-title').textContent = mode==='quran'?'☪ Quran Video Generator':'✝ Bible Video Generator';
+  document.getElementById('scripture-modal-desc').textContent = mode==='quran'
+    ? 'Select a Surah and generate a full animated video script with calm Quranic narration.'
+    : 'Select a Bible book and generate a full animated video script with reverent narration.';
+  const tabs = document.querySelectorAll('#scripture-tab-switcher button');
+  tabs.forEach((t,i)=>t.classList.toggle('active', (i===0&&mode==='quran')||(i===1&&mode==='bible')));
+  if(btn){ const tabs2=document.querySelectorAll('#scripture-tab-switcher button'); tabs2.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  updateScripturePreview();
+}
+
+function onSurahChange() {
+  const n = parseInt(document.getElementById('q-surah').value);
+  const info = QURAN_SURAHS[n] || { ayahs: 10 };
+  const hint = document.getElementById('q-ayah-hint');
+  if(hint) hint.textContent = `(1–${info.ayahs})`;
+  document.getElementById('q-to').value = Math.min(info.ayahs, 30);
+  document.getElementById('q-to').max = info.ayahs;
+  document.getElementById('q-from').max = info.ayahs;
+  updateScripturePreview();
+}
+
+function onBibleBookChange2() {
+  const book = document.getElementById('b-book').value;
+  const max = BIBLE_CHAPTERS_COUNT[book] || 50;
+  const hint = document.getElementById('b-ch-hint');
+  if(hint) hint.textContent = `(1–${max})`;
+  document.getElementById('b-to').max = max;
+  document.getElementById('b-to').value = Math.min(max, 10);
+  updateScripturePreview();
+}
+
+function updateScripturePreview() {
+  const len = parseInt(document.getElementById('sc-length')?.value)||60;
+  const style = document.getElementById('sc-style')?.value || 'meditation';
+  const sceneDur = style==='meditation'?18:style==='recitation'?12:10;
+  const sceneCount = Math.ceil(len*60/sceneDur);
+  const hrs = len>=60?(len/60).toFixed(1)+'h':len+'min';
+  let label = '';
+  if (scriptureTabMode==='quran') {
+    const n = parseInt(document.getElementById('q-surah')?.value)||1;
+    const info = QURAN_SURAHS[n];
+    const name = info ? info.name : `Surah ${n}`;
+    const from = document.getElementById('q-from')?.value||1;
+    const to = document.getElementById('q-to')?.value||7;
+    label = `${name} (ayah ${from}–${to}) · ~${sceneCount} scenes · ${hrs}`;
+  } else {
+    const book = document.getElementById('b-book')?.value||'Psalms';
+    const from = document.getElementById('b-from')?.value||1;
+    const to = document.getElementById('b-to')?.value||5;
+    label = `${book} ${from}–${to} (KJV) · ~${sceneCount} scenes · ${hrs}`;
+  }
+  const prev = document.getElementById('sc-preview');
+  if(prev) prev.textContent = label;
+}
+
+function getQuranVerses(surahNum, from, to) {
+  const verses = QURAN_VERSES[surahNum];
+  if(verses) return verses.slice(from-1, to);
+  // Generate placeholder verses
+  const info = QURAN_SURAHS[surahNum] || { name:'the Surah', topic:'Divine guidance' };
+  return Array.from({length: to-from+1}, (_,i) => {
+    const ayah = from + i;
+    const generics = [
+      `And We have made from water every living thing. Will they not then believe?`,
+      `Indeed, Allah is with the patient. Trust in Him, for He is sufficient.`,
+      `He is Allah, the Creator, the Initiator, the Shaper. To Him belong the most beautiful names.`,
+      `And He is with you wherever you are. And Allah, of what you do, is Seeing.`,
+      `Indeed, with hardship [will be] ease. Indeed, with hardship [will be] ease.`,
+      `So which of the favors of your Lord would you deny?`,
+      `And We created you, then We shaped you, then We said to the angels, Prostrate to Adam.`,
+      `Our Lord, give us in this world [that which is] good and in the Hereafter [that which is] good.`,
+      `And it is He who has made the night and the day in succession for whoever desires to remember or desires gratitude.`,
+      `Indeed, I am Allah. There is no deity except Me, so worship Me and establish prayer for My remembrance.`,
+    ];
+    return `[${info.name} ${ayah}] ${generics[(ayah-1)%generics.length]}`;
+  });
+}
+
+function getBibleVerseSet(book, chapterNum) {
+  if(book==='Psalms' && BIBLE_VERSES['Psalms'][chapterNum]) {
+    return BIBLE_VERSES['Psalms'][chapterNum];
+  }
+  const bookVerses = {
+    'Genesis':["In the beginning God created the heaven and the earth.","And God said, Let there be light: and there was light.","And God saw every thing that he had made, and, behold, it was very good.","So God created man in his own image, in the image of God created he him."],
+    'John':["For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.","In the beginning was the Word, and the Word was with God, and the Word was God.","I am the way, the truth, and the life: no man cometh unto the Father, but by me.","I am the resurrection, and the life: he that believeth in me, though he were dead, yet shall he live."],
+    'Romans':["For all have sinned, and come short of the glory of God.","And we know that all things work together for good to them that love God.","For the wages of sin is death; but the gift of God is eternal life through Jesus Christ our Lord.","If God be for us, who can be against us?"],
+    'Isaiah':["But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles.","Fear thou not; for I am with thee: be not dismayed; for I am thy God: I will strengthen thee.","For I the LORD thy God will hold thy right hand, saying unto thee, Fear not; I will help thee.","Behold, I do a new thing; now it shall spring forth; shall ye not know it?"],
+    'Matthew':["Blessed are the pure in heart: for they shall see God.","Ask, and it shall be given you; seek, and ye shall find; knock, and it shall be opened unto you.","Come unto me, all ye that labour and are heavy laden, and I will give you rest.","For where two or three are gathered together in my name, there am I in the midst of them."],
+    'Revelation':["Behold, I make all things new.","I am Alpha and Omega, the beginning and the end, the first and the last.","And God shall wipe away all tears from their eyes; and there shall be no more death, neither sorrow, nor crying.","Behold, I stand at the door, and knock: if any man hear my voice, and open the door, I will come in to him."],
+    'Proverbs':["Trust in the LORD with all thine heart; and lean not unto thine own understanding.","In all thy ways acknowledge him, and he shall direct thy paths.","The fear of the LORD is the beginning of wisdom.","A soft answer turneth away wrath: but grievous words stir up anger."],
+    'Ephesians':["For by grace are ye saved through faith; and that not of yourselves: it is the gift of God.","Put on the whole armour of God, that ye may be able to stand against the wiles of the devil.","And be ye kind one to another, tenderhearted, forgiving one another, even as God for Christ's sake hath forgiven you."],
+    'Philippians':["I can do all things through Christ which strengtheneth me.","And the peace of God, which passeth all understanding, shall keep your hearts and minds through Christ Jesus.","Rejoice in the Lord alway: and again I say, Rejoice."],
+  };
+  const vv = bookVerses[book] || BIBLE_VERSES['default'];
+  return { title:`${book} ${chapterNum}`, verses:vv };
+}
+
+// ── GENERATE SCRIPTURE VIDEO ─────────────────────────────────────────────────
+function generateScriptureVideo() {
+  const lengthMin = parseInt(document.getElementById('sc-length').value)||60;
+  const style = document.getElementById('sc-style').value;
+  const bgChoice = document.getElementById('sc-bg').value;
+  const sceneDur = style==='meditation'?18:style==='recitation'?12:10;
+  const moodMap = {meditation:'spiritual',recitation:'peaceful',dramatic:'dramatic'};
+  const mood = moodMap[style]||'spiritual';
+  const target = lengthMin * 60;
+
+  document.getElementById('sc-status').textContent = '⏳ Building script…';
+
+  let scriptLines = [], sceneIdx = 1, totalSecs = 0;
+
+  if (scriptureTabMode === 'quran') {
+    const surahNum = parseInt(document.getElementById('q-surah').value)||1;
+    const from = parseInt(document.getElementById('q-from').value)||1;
+    const to = parseInt(document.getElementById('q-to').value)||7;
+    const info = QURAN_SURAHS[surahNum] || { name:`Surah ${surahNum}`, topic:'Divine Revelation' };
+    const allVerses = getQuranVerses(surahNum, from, to);
+
+    let vi = 0;
+    while (totalSecs < target && sceneIdx <= 9999) {
+      const verse = allVerses[vi % allVerses.length];
+      const ayahNum = from + (vi % allVerses.length);
+      const actions = [
+        `Camera pans slowly across ${bgChoice} setting. Golden light descends.`,
+        `Stars shimmer above. Gentle light moves across the scene.`,
+        `Soft winds blow. Sacred geometry glows in the distance.`,
+        `Horizon glows. Deep stillness pervades the scene.`,
+        `Arabic calligraphy flows upward in golden light.`,
+      ];
+      scriptLines.push(`[SCENE ${sceneIdx}: ${info.name} - Ayah ${ayahNum}]`);
+      scriptLines.push(`CHARACTER: Reciter`);
+      scriptLines.push(`DIALOGUE: ${verse}`);
+      scriptLines.push(`ACTION: ${actions[sceneIdx%actions.length]}`);
+      scriptLines.push(`MOOD: ${mood}`);
+      scriptLines.push(`BACKGROUND: ${bgChoice}`);
+      scriptLines.push(`DURATION: ${sceneDur}`);
+      scriptLines.push('');
+      totalSecs += sceneDur; sceneIdx++; vi++;
+    }
+    document.getElementById('ss-project-name').textContent = `${info.name} · ${lengthMin}min Quran Video`;
+  } else {
+    const book = document.getElementById('b-book').value;
+    const fromCh = parseInt(document.getElementById('b-from').value)||1;
+    const toCh = parseInt(document.getElementById('b-to').value)||5;
+    const chapNums = []; for(let c=fromCh;c<=toCh;c++) chapNums.push(c);
+    let ci=0, vi=0;
+
+    while (totalSecs < target && sceneIdx <= 9999) {
+      const chapNum = chapNums[ci % chapNums.length];
+      const chapData = getBibleVerseSet(book, chapNum);
+      const verses = chapData.verses || BIBLE_VERSES['default'];
+      const verse = verses[vi % verses.length];
+      const actions = [
+        `Gentle light fills the ${bgChoice} scene. Sacred atmosphere.`,
+        `Soft candle-glow flickers. Words rise like incense.`,
+        `Stars reflect in still waters. Peace descends.`,
+        `Golden dawn breaks over the horizon. Hope rises.`,
+      ];
+      scriptLines.push(`[SCENE ${sceneIdx}: ${chapData.title||`${book} ${chapNum}`} - Verse ${vi+1}]`);
+      scriptLines.push(`CHARACTER: Narrator`);
+      scriptLines.push(`DIALOGUE: ${verse}`);
+      scriptLines.push(`ACTION: ${actions[sceneIdx%actions.length]}`);
+      scriptLines.push(`MOOD: ${mood}`);
+      scriptLines.push(`BACKGROUND: ${bgChoice}`);
+      scriptLines.push(`DURATION: ${sceneDur}`);
+      scriptLines.push('');
+      totalSecs += sceneDur; sceneIdx++;
+      vi++; if(vi>=verses.length){vi=0;ci++;}
+    }
+    document.getElementById('ss-project-name').textContent = `${book} ${fromCh}–${toCh} · ${lengthMin}min Bible Video`;
+  }
+
+  scriptLines.push('[SCRIPT READY]');
+  document.getElementById('ss-script').value = scriptLines.join('\n');
+  document.getElementById('ss-bg-style').value = bgChoice;
+  document.getElementById('ss-text-overlay').value = 'fullscreen';
+  document.getElementById('ss-font-style').value = 'serif';
+  document.getElementById('sc-status').textContent = `✓ ${sceneIdx-1} scenes · ${fmtTime(totalSecs)}`;
+  setTimeout(()=>{ closeScriptureModal(); openStudio(); ssParse(); }, 600);
+}
+
+// ── STUDIO ──────────────────────────────────────────────────────────────────
+let ssScenes=[], ssCurrentScene=0, ssPlaying=false;
+let ssAnimFrame=null, ssSceneTimer=0, ssSceneStart=0;
+let ssTotalDuration=0, ssElapsed=0, ssParticles=[];
+
+function openStudio() { document.getElementById('scripture-studio').classList.add('open'); }
+function closeStudio() { ssStop(); document.getElementById('scripture-studio').classList.remove('open'); }
+function openStudioWithScript(btn) {
+  const bubble = btn.closest('.msg-content').querySelector('.msg-bubble');
+  const raw = (bubble.innerText||bubble.textContent||'');
+  document.getElementById('ss-script').value = raw;
+  openStudio(); ssParse();
+}
+
+function ssParse() {
+  const raw = document.getElementById('ss-script').value;
+  ssScenes = parseScript(raw);
+  if(!ssScenes.length){ ssSetStatus('⚠ No scenes found.'); return; }
+  ssTotalDuration = ssScenes.reduce((s,sc)=>s+sc.duration,0);
+  ssCurrentScene=0; ssElapsed=0; ssParticles=[];
+  buildSSSceneList();
+  document.getElementById('ss-scene-count').textContent = ssScenes.length+' scenes · '+fmtTime(ssTotalDuration);
+  document.getElementById('ss-scene-list-count').textContent = ssScenes.length+'';
+  document.getElementById('ss-render-btn').disabled = false;
+  document.getElementById('ss-srt-btn').disabled = false;
+  document.getElementById('ss-srt-btn2').disabled = false;
+  ssInitParticles();
+  ssRenderScene(ssScenes[0], 0);
+  updateSSPlaybar();
+  ssSetStatus('✓ '+ssScenes.length+' scenes · '+fmtTime(ssTotalDuration));
+}
+
+function parseScript(raw) {
+  const scenes = [];
+  const defaultDur = parseInt(document.getElementById('ss-default-dur')?.value||18);
+  const blocks = raw.split(/\[SCENE\s+\d+[:\s]/i).filter(b=>b.trim());
+  blocks.forEach((block,idx)=>{
+    const lines = block.split('\n');
+    const title = lines[0].replace(/\].*/, '').trim() || `Scene ${idx+1}`;
+    const sc = {id:idx+1, title, location:title.split('-')[0].trim(), character:'', dialogue:'', action:'', mood:'spiritual', background:'auto', duration:defaultDur};
+    for(const line of lines){
+      const l=line.trim();
+      if(/^CHARACTER\s*:/i.test(l))   sc.character  = l.replace(/^CHARACTER\s*:\s*/i,'');
+      if(/^DIALOGUE\s*:/i.test(l))    sc.dialogue   = l.replace(/^DIALOGUE\s*:\s*/i,'');
+      if(/^ACTION\s*:/i.test(l))      sc.action     = l.replace(/^ACTION\s*:\s*/i,'');
+      if(/^MOOD\s*:/i.test(l))        sc.mood       = l.replace(/^MOOD\s*:\s*/i,'').toLowerCase();
+      if(/^BACKGROUND\s*:/i.test(l))  sc.background = l.replace(/^BACKGROUND\s*:\s*/i,'').toLowerCase();
+      if(/^DURATION\s*:/i.test(l)){ const d=parseFloat(l.replace(/^DURATION\s*:\s*/i,'')); if(!isNaN(d)) sc.duration=Math.max(4,Math.min(60,d)); }
+    }
+    if(sc.dialogue||sc.character) scenes.push(sc);
+  });
+  return scenes;
+}
+
+function buildSSSceneList() {
+  const list=document.getElementById('ss-scene-list'); list.innerHTML='';
+  ssScenes.forEach((sc,i)=>{
+    const div=document.createElement('div');
+    div.className='ss-scene-item'+(i===0?' active':''); div.dataset.idx=i;
+    div.innerHTML=`<span class="ss-scene-num">${sc.id}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sc.location||sc.title}</span><span style="font-size:10px;color:#3a3530;font-family:monospace;">${sc.duration}s</span>`;
+    div.onclick=()=>ssGoToScene(i);
+    list.appendChild(div);
+  });
+}
+
+function ssGoToScene(idx) {
+  ssStop(); ssCurrentScene=idx;
+  ssElapsed=ssScenes.slice(0,idx).reduce((s,sc)=>s+sc.duration,0);
+  ssSceneTimer=0; ssInitParticles();
+  ssRenderScene(ssScenes[idx],0); updateSSSceneList(idx); updateSSPlaybar();
+}
+function updateSSSceneList(idx) {
+  document.querySelectorAll('.ss-scene-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  if(ssScenes[idx]) document.getElementById('ss-scene-badge').textContent=(idx+1)+'/'+ssScenes.length;
+}
+function ssTogglePlay() { ssPlaying ? ssStop() : ssPlayAll(); }
+function ssSkipBack() { ssGoToScene(Math.max(0,ssCurrentScene-1)); }
+function ssSkipFwd()  { ssGoToScene(Math.min(ssScenes.length-1,ssCurrentScene+1)); }
+
+function ssPlay() { ssCurrentScene=0; ssElapsed=0; ssSceneTimer=0; ssInitParticles(); ssPlayAll(); }
+function ssPlayAll() {
+  if(!ssScenes.length) return;
+  ssPlaying=true;
+  document.getElementById('ss-play-btn').textContent='⏸';
+  ssSceneStart=performance.now()-(ssSceneTimer*1000);
+  ssLoop();
+  if(document.getElementById('ss-tts-narrate').checked) ssTTSScene(ssScenes[ssCurrentScene]);
+}
+function ssStop() {
+  ssPlaying=false;
+  if(ssAnimFrame){cancelAnimationFrame(ssAnimFrame);ssAnimFrame=null;}
+  document.getElementById('ss-play-btn').textContent='▶';
+  speechSynthesis.cancel();
+}
+function ssLoop() {
+  if(!ssPlaying) return;
+  const speed=parseFloat(document.getElementById('ss-anim-speed').value)||1;
+  ssSceneTimer=((performance.now()-ssSceneStart)/1000)*speed;
+  const sc=ssScenes[ssCurrentScene]; if(!sc){ssStop();return;}
+  if(ssSceneTimer>=sc.duration){
+    ssCurrentScene++;
+    if(ssCurrentScene>=ssScenes.length){ssStop();ssCurrentScene=ssScenes.length-1;updateSSSceneList(ssCurrentScene);updateSSPlaybar();ssSetStatus('✓ Playback complete');return;}
+    ssElapsed+=sc.duration;ssSceneTimer=0;ssSceneStart=performance.now();
+    ssInitParticles();updateSSSceneList(ssCurrentScene);
+    if(document.getElementById('ss-tts-narrate').checked) ssTTSScene(ssScenes[ssCurrentScene]);
+  }
+  ssRenderScene(ssScenes[ssCurrentScene],ssSceneTimer/ssScenes[ssCurrentScene].duration);
+  updateSSPlaybar();
+  ssAnimFrame=requestAnimationFrame(ssLoop);
+}
+function ssTTSScene(sc) {
+  if(!sc||!sc.dialogue) return;
+  const utter=new SpeechSynthesisUtterance(sc.dialogue);
+  utter.rate=0.72; utter.pitch=0.88; utter.volume=1;
+  // Prefer calm/natural voice
+  const voices=speechSynthesis.getVoices();
+  const pref=voices.find(v=>/daniel|samantha|karen|moira|natural|eloquence/i.test(v.name)&&v.lang.startsWith('en'))||voices.find(v=>v.lang.startsWith('en'));
+  if(pref) utter.voice=pref;
+  speechSynthesis.cancel(); speechSynthesis.speak(utter);
+}
+function updateSSPlaybar() {
+  const total=ssTotalDuration||1, elapsed=ssElapsed+(ssSceneTimer||0);
+  document.getElementById('ss-timeline-fill').style.width=Math.min(100,(elapsed/total)*100)+'%';
+  document.getElementById('ss-time-label').textContent=fmtTime(Math.floor(elapsed))+' / '+fmtTime(Math.floor(total));
+}
+function ssSeek(e) {
+  if(!ssScenes.length) return;
+  const rect=document.getElementById('ss-timeline').getBoundingClientRect();
+  const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  const target=pct*ssTotalDuration; let acc=0;
+  for(let i=0;i<ssScenes.length;i++){if(acc+ssScenes[i].duration>target){ssGoToScene(i);return;}acc+=ssScenes[i].duration;}
+  ssGoToScene(ssScenes.length-1);
+}
+function ssSetStatus(msg) { document.getElementById('ss-status').textContent=msg; }
+
+// ── PARTICLES ────────────────────────────────────────────────────────────────
+function ssInitParticles() {
+  if(!document.getElementById('ss-particles')?.checked){ssParticles=[];return;}
+  const canvas=document.getElementById('ss-canvas');
+  ssParticles=Array.from({length:30},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2+0.3,vx:(Math.random()-.5)*.4,vy:-(Math.random()*.5+.1),life:Math.random(),maxLife:Math.random()*.7+.3,hue:Math.random()<.5?45:168}));
+}
+
+// ── CANVAS RENDERER ──────────────────────────────────────────────────────────
+const MOOD_PALETTES = {
+  spiritual: { sky:['#050512','#0a0a20','#131330'], ground:'#030308', accent:'#c8a84b', glow:'#ffdd88', stars:true },
+  peaceful:  { sky:['#060e1a','#0c1a2e','#142240'], ground:'#040810', accent:'#3dc9a8', glow:'#00c090', stars:true },
+  hopeful:   { sky:['#080c22','#121835','#1c2850'], ground:'#050810', accent:'#c8a84b', glow:'#6baaff', stars:true },
+  worship:   { sky:['#130c00','#221500','#331e00'], ground:'#0a0700', accent:'#ffd700', glow:'#ffaa00', stars:true },
+  dramatic:  { sky:['#100814','#1e1028','#0e0810'], ground:'#080510', accent:'#9944cc', glow:'#7700ff', stars:true },
+  default:   { sky:['#06060e','#0c0c1a','#101020'], ground:'#03030a', accent:'#c8a84b', glow:'#ffdd88', stars:true },
+};
+function getMoodPalette(mood) {
+  if(!mood) return MOOD_PALETTES.default;
+  for(const k of Object.keys(MOOD_PALETTES)) if(mood.includes(k)) return MOOD_PALETTES[k];
+  return MOOD_PALETTES.default;
+}
+
+function resolveBG(sc) {
+  const bgSel=document.getElementById('ss-bg-style')?.value||'auto';
+  if(bgSel!=='auto') return bgSel;
+  const loc=(sc.location||sc.background||'').toLowerCase();
+  if(/temple|sacred|hall|mosque|church/i.test(loc)) return 'temple';
+  if(/desert|sand|wilderness/i.test(loc)) return 'desert';
+  if(/ocean|sea|water|river/i.test(loc)) return 'ocean';
+  if(/mountain|peak|cliff/i.test(loc)) return 'mountain';
+  if(/garden|paradise|green/i.test(loc)) return 'garden';
+  return 'stars';
+}
+
+function ssRenderScene(sc, progress) {
+  const canvas=document.getElementById('ss-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  const t=performance.now()/1000;
+  const bg=resolveBG(sc);
+  const pal=getMoodPalette(sc.mood);
+
+  // Background
+  const skyGrad=ctx.createLinearGradient(0,0,0,H);
+  pal.sky.forEach((c,i)=>skyGrad.addColorStop(i/(pal.sky.length-1),c));
+  ctx.fillStyle=skyGrad; ctx.fillRect(0,0,W,H);
+
+  // Stars
+  if(pal.stars) {
+    for(let i=0;i<200;i++){
+      const sx=(i*137.5)%W, sy=(i*97.3)%H;
+      const twink=Math.sin(t*1.2+i)*.4+.6;
+      ctx.beginPath(); ctx.arc(sx,sy,i%5<1?1.2:.6,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,245,220,${twink*(i%7<2?.9:.4)})`; ctx.fill();
+    }
+  }
+
+  // Background-specific elements
+  if(bg==='desert') drawDesert(ctx,W,H,t,pal,progress);
+  else if(bg==='temple') drawTemple(ctx,W,H,t,pal,progress);
+  else if(bg==='ocean') drawOcean(ctx,W,H,t,pal,progress);
+  else if(bg==='mountain') drawMountain(ctx,W,H,t,pal,progress);
+  else if(bg==='garden') drawGarden(ctx,W,H,t,pal,progress);
+  else drawStarfield(ctx,W,H,t,pal,progress);
+
+  // Particles
+  ssParticles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.life+=0.004;
+    if(p.life>p.maxLife){p.x=Math.random()*W;p.y=H;p.life=0;}
+    const alpha=(1-p.life/p.maxLife)*0.55;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${p.hue},80%,80%,${alpha})`; ctx.fill();
+  });
+
+  // Vignette
+  const vig=ctx.createRadialGradient(W/2,H/2,H*.28,W/2,H/2,H*.82);
+  vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,0.72)');
+  ctx.fillStyle=vig; ctx.fillRect(0,0,W,H);
+
+  // Text overlay
+  const overlay=document.getElementById('ss-text-overlay')?.value||'fullscreen';
+  const fontStyle=document.getElementById('ss-font-style')?.value||'serif';
+  const fontName=fontStyle==='serif'?'Georgia, "Times New Roman", serif':'sans-serif';
+  renderTextOverlay(ctx,W,H,sc,overlay,fontName,progress,t);
+}
+
+function drawDesert(ctx,W,H,t,pal,prog) {
+  // Ground / dunes
+  const g=ctx.createLinearGradient(0,H*.55,0,H);
+  g.addColorStop(0,'#1a1000'); g.addColorStop(1,'#0a0800');
+  ctx.fillStyle=g; ctx.fillRect(0,H*.55,W,H*.45+20);
+  // Dune silhouettes
+  ctx.beginPath(); ctx.moveTo(-10,H*.75);
+  for(let x=0;x<=W+10;x+=20){
+    const y=H*.68+Math.sin(x*.008+t*.12)*24+Math.sin(x*.02+t*.07)*12;
+    ctx.lineTo(x,y);
+  }
+  ctx.lineTo(W+10,H); ctx.lineTo(-10,H); ctx.closePath();
+  ctx.fillStyle='#100d00'; ctx.fill();
+  // Moon
+  const mx=W*.78, my=H*.2, mPulse=Math.sin(t*.4)*.5+.5;
+  ctx.beginPath(); ctx.arc(mx,my,28+mPulse*2,0,Math.PI*2);
+  ctx.fillStyle=`rgba(240,220,150,${.8+mPulse*.15})`; ctx.fill();
+  ctx.beginPath(); ctx.arc(mx,my,34+mPulse*3,0,Math.PI*2);
+  ctx.fillStyle=`rgba(200,168,75,${.12+mPulse*.08})`; ctx.fill();
+}
+
+function drawTemple(ctx,W,H,t,pal,prog) {
+  const g=ctx.createLinearGradient(0,H*.6,0,H); g.addColorStop(0,'#0f0900'); g.addColorStop(1,'#000');
+  ctx.fillStyle=g; ctx.fillRect(0,H*.6,W,H*.4+20);
+  // Pillars
+  const pGlow=Math.sin(t*.6)*.3+.7;
+  [[.25,H*.35],[.4,H*.3],[.6,H*.3],[.75,H*.35]].forEach(([px,py])=>{
+    const pw=18, ph=H*.45;
+    const pg=ctx.createLinearGradient(W*px-pw/2,py,W*px+pw/2,py);
+    pg.addColorStop(0,`rgba(180,140,60,${pGlow*.25})`);
+    pg.addColorStop(.5,`rgba(220,180,90,${pGlow*.45})`);
+    pg.addColorStop(1,`rgba(180,140,60,${pGlow*.25})`);
+    ctx.fillStyle=pg; ctx.fillRect(W*px-pw/2,py,pw,ph);
+    ctx.beginPath(); ctx.arc(W*px,py,16,0,Math.PI*2);
+    ctx.fillStyle=`rgba(200,168,75,${pGlow*.35})`; ctx.fill();
+  });
+  // Arch glow
+  const ag=ctx.createRadialGradient(W*.5,H*.35,0,W*.5,H*.35,180);
+  ag.addColorStop(0,`rgba(200,168,75,${pGlow*.18})`); ag.addColorStop(1,'transparent');
+  ctx.fillStyle=ag; ctx.fillRect(0,0,W,H);
+}
+
+function drawOcean(ctx,W,H,t,pal,prog) {
+  const wg=ctx.createLinearGradient(0,H*.5,0,H); wg.addColorStop(0,'#030c18'); wg.addColorStop(1,'#010608');
+  ctx.fillStyle=wg; ctx.fillRect(0,H*.5,W,H*.5+20);
+  ctx.save(); ctx.globalAlpha=.2;
+  for(let i=0;i<6;i++){
+    ctx.beginPath();
+    for(let x=0;x<=W;x+=4){
+      const y=H*(.5+.02*i)+Math.sin(x*.012+t*.4+i)*(8+i*2)+Math.cos(x*.02+t*.25)*4;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fillStyle=`rgba(61,201,168,${.1+i*.02})`; ctx.fill();
+  }
+  ctx.restore();
+  // Reflection glow
+  const rg=ctx.createRadialGradient(W*.5,H*.5,0,W*.5,H*.5,W*.35);
+  rg.addColorStop(0,`rgba(61,201,168,${.12+Math.sin(t*.3)*.04})`); rg.addColorStop(1,'transparent');
+  ctx.fillStyle=rg; ctx.fillRect(0,H*.45,W,H*.55);
+}
+
+function drawMountain(ctx,W,H,t,pal,prog) {
+  // Mountains
+  [[0,.65],[.2,.45],[.4,.35],[.6,.4],[.8,.5],[1,.65]].forEach(([x,y],i,arr)=>{
+    if(i===0) return;
+    ctx.beginPath(); ctx.moveTo(W*arr[i-1][0],H*arr[i-1][1]);
+    ctx.lineTo(W*x,H*y);
+    if(i===arr.length-1){ ctx.lineTo(W,H); ctx.lineTo(0,H); }
+    ctx.closePath();
+    const mg=ctx.createLinearGradient(0,H*.35,0,H*.7);
+    mg.addColorStop(0,`rgba(120,100,80,${.6-i*.05})`); mg.addColorStop(1,'rgba(20,15,10,0.9)');
+    ctx.fillStyle=mg; ctx.fill();
+  });
+  // Snow peaks
+  ctx.beginPath(); ctx.moveTo(W*.38,H*.38); ctx.lineTo(W*.4,H*.35); ctx.lineTo(W*.42,H*.38);
+  ctx.fillStyle='rgba(240,235,220,0.6)'; ctx.fill();
+  // Glow above
+  const sg=ctx.createRadialGradient(W*.5,H*.2,0,W*.5,H*.2,180);
+  sg.addColorStop(0,`rgba(200,168,75,${.12+Math.sin(t*.2)*.04})`); sg.addColorStop(1,'transparent');
+  ctx.fillStyle=sg; ctx.fillRect(0,0,W,H*.5);
+}
+
+function drawGarden(ctx,W,H,t,pal,prog) {
+  const gg=ctx.createLinearGradient(0,H*.55,0,H); gg.addColorStop(0,'#051205'); gg.addColorStop(1,'#020802');
+  ctx.fillStyle=gg; ctx.fillRect(0,H*.55,W,H*.45+20);
+  // Trees
+  [[.15,.6],[.3,.55],[.7,.55],[.85,.6]].forEach(([px,py])=>{
+    const tx=W*px, ty=H*py;
+    ctx.beginPath(); ctx.moveTo(tx,ty+H*.1); ctx.lineTo(tx-18,ty+H*.1); ctx.lineTo(tx,ty); ctx.lineTo(tx+18,ty+H*.1); ctx.closePath();
+    ctx.fillStyle=`rgba(20,60,20,0.9)`; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx,ty-22); ctx.lineTo(tx-22,ty+10); ctx.lineTo(tx+22,ty+10); ctx.closePath();
+    ctx.fillStyle=`rgba(30,80,30,0.85)`; ctx.fill();
+  });
+  // Garden glow
+  const glw=ctx.createRadialGradient(W*.5,H*.7,0,W*.5,H*.7,120);
+  glw.addColorStop(0,`rgba(80,200,80,${.08+Math.sin(t*.3)*.03})`); glw.addColorStop(1,'transparent');
+  ctx.fillStyle=glw; ctx.fillRect(0,H*.55,W,H*.45);
+}
+
+function drawStarfield(ctx,W,H,t,pal,prog) {
+  // Nebula glow
+  const colors=['rgba(200,168,75,0.04)','rgba(61,201,168,0.04)','rgba(180,100,220,0.03)'];
+  [[.3,.3],[.65,.55],[.45,.65]].forEach(([px,py],i)=>{
+    const ng=ctx.createRadialGradient(W*px,H*py,0,W*px,H*py,W*.35);
+    ng.addColorStop(0,colors[i%colors.length]); ng.addColorStop(1,'transparent');
+    ctx.fillStyle=ng; ctx.fillRect(0,0,W,H);
+  });
+}
+
+function renderTextOverlay(ctx,W,H,sc,overlay,fontName,progress,t) {
+  if(overlay==='none'||!sc.dialogue) return;
+  const text=sc.dialogue;
+  const fadeIn=Math.min(1,progress*8); const fadeOut=progress>.85?Math.max(0,1-(progress-.85)*6.7):1;
+  const alpha=fadeIn*fadeOut;
+  if(alpha<=0) return;
+  ctx.save(); ctx.globalAlpha=alpha;
+
+  if(overlay==='fullscreen') {
+    // Subtle overlay
+    const og=ctx.createLinearGradient(0,H*.3,0,H*.85);
+    og.addColorStop(0,'rgba(0,0,0,0)'); og.addColorStop(.3,'rgba(0,0,0,0.55)'); og.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=og; ctx.fillRect(0,H*.3,W,H*.55);
+    ctx.textAlign='center';
+    const maxW=W*.76; const lines=wrapText(ctx,text,maxW,'19px '+fontName);
+    const lh=32; const totalH=lines.length*lh;
+    const startY=H*.5-totalH/2+12;
+    // Glow line
+    ctx.strokeStyle=`rgba(200,168,75,${.5+Math.sin(t*.8)*.15})`; ctx.lineWidth=1.2;
+    const gLineY=startY-28;
+    ctx.beginPath(); ctx.moveTo(W*.5-90,gLineY); ctx.lineTo(W*.5+90,gLineY); ctx.stroke();
+    lines.forEach((line,i)=>{
+      const y=startY+i*lh;
+      ctx.font=`400 18px ${fontName}`; ctx.fillStyle='rgba(0,0,0,0.55)';
+      ctx.fillText(line,W/2+1,y+1);
+      ctx.fillStyle=`rgba(235,225,200,0.97)`; ctx.fillText(line,W/2,y);
+    });
+    // Reference
+    if(sc.title){
+      ctx.font=`500 11px 'JetBrains Mono',monospace`; ctx.fillStyle='rgba(200,168,75,0.75)';
+      ctx.fillText(sc.title, W/2, startY+totalH+22);
+    }
+  } else if(overlay==='subtitle') {
+    const maxW=W*.84; const lines=wrapText(ctx,text,maxW,'17px '+fontName);
+    const lh=26; const totalH=lines.length*lh+22;
+    const boxY=H-totalH-30;
+    const bg2=ctx.createRoundRect?null:null;
+    ctx.fillStyle='rgba(4,4,14,0.82)';
+    roundRect(ctx,W*.08,boxY-10,W*.84,totalH+10,10); ctx.fill();
+    ctx.textAlign='center'; ctx.font=`400 16px ${fontName}`;
+    lines.forEach((l,i)=>{ ctx.fillStyle='rgba(235,225,200,0.96)'; ctx.fillText(l,W/2,boxY+i*lh+18); });
+  }
+  ctx.restore();
+}
+
+function wrapText(ctx, text, maxW, font) {
+  ctx.font=font;
+  const words=text.split(' '); const lines=[]; let cur='';
+  for(const w of words){ const test=cur?cur+' '+w:w; if(ctx.measureText(test).width>maxW&&cur){lines.push(cur);cur=w;}else cur=test; }
+  if(cur) lines.push(cur);
+  return lines;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+}
+
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return m+':'+(sec<10?'0':'')+sec;}
+
+// ── EXPORT SRT ───────────────────────────────────────────────────────────────
+function ssExportSRT() {
+  if(!ssScenes.length) return;
+  let srt='', t=0;
+  ssScenes.forEach((sc,i)=>{
+    const start=t, end=t+sc.duration; t=end;
+    srt+=`${i+1}\n${toSRTTime(start)} --> ${toSRTTime(end)}\n${sc.dialogue}\n\n`;
+  });
+  const blob=new Blob([srt],{type:'text/plain'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sacredforge-subtitles.srt'; a.click();
+  URL.revokeObjectURL(a.href);
+}
+function toSRTTime(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=Math.floor(s%60),ms=Math.floor((s%1)*1000);return `${pad(h)}:${pad(m)}:${pad(sec)},${pad(ms,3)}`;}
+function pad(n,len=2){return String(n).padStart(len,'0');}
+
+// ── TTS ──────────────────────────────────────────────────────────────────────
+let ttsSpeaking=false, ttsUtterance=null;
+
+function openTTSPanel(){ document.getElementById('tts-panel').classList.add('open'); document.getElementById('tts-toggle-btn').style.color='var(--gold)'; loadVoices(); }
+function closeTTSPanel(){ ttsStop(); document.getElementById('tts-panel').classList.remove('open'); document.getElementById('tts-toggle-btn').style.color=''; }
+function toggleTTSPanel(){ document.getElementById('tts-panel').classList.contains('open')?closeTTSPanel():openTTSPanel(); }
+
+function loadVoices(){
+  const sel=document.getElementById('tts-voice');
+  const populate=()=>{
+    const voices=speechSynthesis.getVoices(); if(!voices.length) return;
+    sel.innerHTML='';
+    const sorted=[...voices].sort((a,b)=>(a.lang.startsWith('en')?0:1)-(b.lang.startsWith('en')?0:1));
+    sorted.forEach(v=>{ const o=document.createElement('option'); o.value=v.name; o.textContent=v.name+' ('+v.lang+')'; sel.appendChild(o); });
+    const pref=sorted.find(v=>/daniel|samantha|karen|moira|natural/i.test(v.name)&&v.lang.startsWith('en'))||sorted.find(v=>v.lang.startsWith('en'));
+    if(pref) sel.value=pref.name;
+  };
+  populate(); speechSynthesis.onvoiceschanged=populate;
+}
+
+function ttsBrowserSpeak(){
+  const text=document.getElementById('tts-text').value.trim();
+  if(!text){setTTSStatus('No text entered.','err');return;}
+  ttsStop();
+  const rate=parseFloat(document.getElementById('tts-rate').value)||0.72;
+  const pitch=parseFloat(document.getElementById('tts-pitch').value)||0.88;
+  const voiceName=document.getElementById('tts-voice').value;
+  ttsUtterance=new SpeechSynthesisUtterance(text);
+  ttsUtterance.rate=rate; ttsUtterance.pitch=pitch; ttsUtterance.volume=1;
+  const v=speechSynthesis.getVoices().find(v=>v.name===voiceName);
+  if(v) ttsUtterance.voice=v;
+  ttsUtterance.onstart=()=>{ttsSpeaking=true;setTTSStatus('▶ Speaking…','ok');document.getElementById('tts-speak-btn').disabled=true;};
+  ttsUtterance.onend=()=>{ttsSpeaking=false;setTTSStatus('✓ Done','ok');document.getElementById('tts-speak-btn').disabled=false;document.querySelectorAll('.speak-btn').forEach(b=>b.classList.remove('speaking'));};
+  ttsUtterance.onerror=()=>{ttsSpeaking=false;setTTSStatus('Error speaking.','err');document.getElementById('tts-speak-btn').disabled=false;};
+  speechSynthesis.speak(ttsUtterance);
+}
+function ttsStop(){speechSynthesis.cancel();ttsSpeaking=false;setTTSStatus('','');if(document.getElementById('tts-speak-btn'))document.getElementById('tts-speak-btn').disabled=false;document.querySelectorAll('.speak-btn').forEach(b=>b.classList.remove('speaking'));}
+function setTTSStatus(msg,type){const el=document.getElementById('tts-browser-status');if(!el)return;el.textContent=msg;el.className='tts-status'+(type?' '+type:'');}
+
+function ttsFromMessage(btn){
+  const bubble=btn.closest('.msg-content').querySelector('.msg-bubble');
+  const tmp=document.createElement('div'); tmp.innerHTML=bubble.innerHTML.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'');
+  const text=(tmp.textContent||'').substring(0,2000);
+  openTTSPanel();
+  document.getElementById('tts-text').value=text;
+  document.querySelectorAll('.speak-btn').forEach(b=>b.classList.remove('speaking'));
+  btn.classList.add('speaking');
+  ttsBrowserSpeak();
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',()=>{
+  setTier('free');
+  updateStatusFooter();
+  const rateEl=document.getElementById('tts-rate');
+  const pitchEl=document.getElementById('tts-pitch');
+  if(rateEl) rateEl.addEventListener('input',()=>{document.getElementById('tts-rate-val').textContent=parseFloat(rateEl.value).toFixed(2)+'×';});
+  if(pitchEl) pitchEl.addEventListener('input',()=>{document.getElementById('tts-pitch-val').textContent=parseFloat(pitchEl.value).toFixed(1);});
+  const speedEl=document.getElementById('ss-anim-speed');
+  if(speedEl) speedEl.addEventListener('input',()=>{document.getElementById('ss-speed-val').textContent=parseFloat(speedEl.value).toFixed(1)+'×';});
+  loadVoices();
+  onSurahChange();
+  // Initial canvas render
+  const canvas=document.getElementById('ss-canvas');
+  if(canvas){
+    const ctx=canvas.getContext('2d');
+    const sg=ctx.createLinearGradient(0,0,0,canvas.height);
+    sg.addColorStop(0,'#06060e'); sg.addColorStop(1,'#101020');
+    ctx.fillStyle=sg; ctx.fillRect(0,0,canvas.width,canvas.height);
+  }
+
+  // splash screen shown on load — no initial chat message needed
+});
+</script>
+</body>
+</html>
