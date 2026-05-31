@@ -1,21 +1,40 @@
 # SacredForge AI · Quran & Bible Studio
 
-A single-file, client-side web application for generating Islamic and Christian scripture video scripts, animated canvases, TTS narration, and SRT subtitle exports — powered by the **Anthropic Claude API**.
+A single-file, zero-dependency web app for generating Islamic and Christian scripture video scripts, animated canvas scenes, TTS narration, and SRT subtitle exports.
 
 ---
 
-## ⚠️ API Notice — Not Pollinations
+## Quick Start
 
-> **This file does NOT use the Pollinations API.**
-> It calls the **Anthropic Claude API** directly:
->
-> ```
-> POST https://api.anthropic.com/v1/messages
-> Model: claude-sonnet-4-20250514
-> ```
->
-> The sidebar also displays **"Claude Sonnet 4 · FREE"** as the AI model label.
-> If you intended to use the Pollinations API (`https://text.pollinations.ai` or `https://image.pollinations.ai`), the `callAI()` function (line ~759) will need to be updated.
+1. Download `index.html`
+2. Open it in any modern browser — no server, no install, no build step
+3. Start chatting or click a suggestion tile on the welcome screen
+
+---
+
+## API Keys — Where to Enter Them
+
+Both keys are entered directly in the **sidebar**, under the **AI Engine** section. Keys are held in memory only and are never stored or sent anywhere other than their respective APIs.
+
+### Free Tier — Pollinations AI
+
+1. Click the **✦ FREE** tab in the AI Engine section
+2. You will see a **"Pollinations key (optional)"** password field
+3. Paste your Pollinations API key there
+4. The badge next to the Pollinations label will change from **FREE → KEY SET** to confirm
+5. Use the 👁 eye button to reveal/hide the key as you type
+
+> The app works without a key at all — adding one unlocks higher rate limits on the Pollinations side.
+> Get a key at: **https://auth.pollinations.ai**
+
+### Pro Tier — Claude Sonnet 4 (Anthropic)
+
+1. Click the **★ PRO** tab in the AI Engine section
+2. Paste your Anthropic API key (`sk-ant-…`) into the **"sk-ant-… API key"** field
+3. Use the 👁 eye button to reveal/hide
+4. The app will switch to Claude Sonnet 4 for all chat and script generation
+
+> Get an Anthropic API key at: **https://console.anthropic.com**
 
 ---
 
@@ -23,96 +42,91 @@ A single-file, client-side web application for generating Islamic and Christian 
 
 | Feature | Description |
 |---|---|
-| 💬 **AI Chat** | Conversational scripture assistant — tafsir, theology, devotional writing |
-| 🎬 **Video Script Generator** | Structured scene scripts for Quran Surahs or Bible passages |
-| 🎨 **Animation Studio** | Canvas-based animated backgrounds (stars, desert, ocean, temple, mountain, garden) |
-| 🔊 **TTS Voice Studio** | Browser Web Speech API with rate/pitch controls |
-| 📄 **SRT Export** | Download subtitle files for use in video editors |
+| 💬 AI Chat | Conversational scripture assistant — tafsir, theology, devotional writing |
+| 🎬 Video Script Generator | Structured scene scripts for any Surah or Bible passage |
+| 🎨 Animation Studio | Canvas-based animated backgrounds: stars, desert, ocean, temple, mountain, garden |
+| 🔊 TTS Voice Studio | Browser Web Speech API with adjustable rate and pitch |
+| 📄 SRT Export | Download subtitle files ready for any video editor |
 
 ---
 
-## How to Use
+## AI Engines
 
-1. **Open `index.html`** in any modern browser (Chrome, Edge, Firefox, Safari). No server or build step needed.
-2. **Set your API key.** The app calls `https://api.anthropic.com/v1/messages` directly from the browser. You must either:
-   - Add your Anthropic API key in the `callAI()` function headers: `'x-api-key': 'YOUR_KEY_HERE'`
-   - Or proxy requests through a backend to keep the key secure (recommended for production).
-3. **Choose a scripture source** from the sidebar: Holy Quran, Holy Bible (KJV), or Both.
-4. **Chat freely** or use the Quick Action buttons to open the Video Generator modal.
-5. **Open Studio** to animate and preview generated scenes on the canvas.
-6. **Export SRT** subtitles from the studio toolbar when your scene list is ready.
+| | Free (Pollinations) | Pro (Claude) |
+|---|---|---|
+| **Provider** | pollinations.ai | Anthropic |
+| **Model** | OpenAI-compatible default | claude-sonnet-4-20250514 |
+| **API key needed?** | No (optional for higher limits) | Yes |
+| **Key field location** | Sidebar → ✦ FREE tab | Sidebar → ★ PRO tab |
+| **Endpoint** | `https://text.pollinations.ai/openai` | `https://api.anthropic.com/v1/messages` |
+
+Switch between tiers at any time using the **FREE / PRO** toggle in the sidebar — takes effect on the very next message.
 
 ---
 
 ## Project Structure
 
-Everything is self-contained in a single `index.html` file:
+Everything lives in one `index.html` file:
 
 ```
 index.html
-├── <style>          CSS — dark theme, layout, components (lines 9–350)
-├── <div id="app">   HTML — sidebar, chat, modals, studio canvas
+├── <style>         Dark theme, layout, splash screen, sidebar, modals (~350 lines)
+├── <div id="app">  HTML — sidebar, welcome splash, chat, studio canvas, modals
 └── <script>
-    ├── Data         QURAN_SURAHS, QURAN_VERSES, BIBLE_VERSES constants
-    ├── callAI()     Anthropic API call (single function, line ~759)
-    ├── Chat         sendMessage(), addMessage(), formatResponse()
-    ├── Studio       openStudio(), ssGenerate(), ssRender(), animation loop
+    ├── State        conversationHistory, currentTier, pollinationsApiKey, claudeApiKey
+    ├── Tier UI      setTier(), savePollinationsKey(), saveApiKey(), key visibility toggles
+    ├── API calls    callAI() → callPollinations() or callClaude()
+    ├── Chat         sendMessage(), addMessage(), formatResponse(), splashPrompt()
+    ├── Studio       openStudio(), ssGenerate(), ssRender(), canvas animation loop
     ├── TTS          ttsBrowserSpeak(), ttsStop(), loadVoices()
-    └── SRT Export   ssExportSRT(), toSRTTime()
+    └── SRT Export   ssExportSRT()
 ```
 
 ---
 
-## AI / API Details
+## Welcome Screen
 
-```js
-// callAI() — lines ~759–777
-fetch('https://api.anthropic.com/v1/messages', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4000,
-    system: getSystemPrompt(),
-    messages,   // full conversation history
-  }),
-});
-```
+On first load a clean splash screen is shown (similar to Claude's home screen) with:
 
-The system prompt (`getSystemPrompt()`) instructs the model to act as a reverent scripture assistant and to output structured `[SCENE N: ...]` blocks when generating video scripts.
+- SacredForge logo and tagline
+- 6 suggestion tiles — click any to instantly start a chat
+- Disappears automatically when the first message is sent
+- Restored by clicking **+ New** in the top bar
 
 ---
 
-## Security Warning
+## Scripture Data (Built-in)
 
-**Never expose your Anthropic API key in a public-facing HTML file.** The current implementation makes direct browser-to-API calls with no key obfuscation. For any deployment beyond local personal use, route API calls through a server-side proxy.
+The app ships with built-in verse data so it works even without an API call for basic display:
 
----
+- **Quran** — 15 key Surahs with English translations (Sahih International)
+- **Bible (KJV)** — selected Psalms and a default verse pool covering both Testaments
 
-## Fonts & External Dependencies
-
-| Resource | Source |
-|---|---|
-| Cinzel, Lora, JetBrains Mono | Google Fonts CDN |
-| Web Speech API (TTS) | Native browser API — no external dependency |
-| Canvas animation | Native `<canvas>` — no library |
-| Anthropic API | `https://api.anthropic.com` |
-
-No npm packages, no build tools, no frameworks. Pure HTML/CSS/JS.
+The AI chat can reference and expand on any scripture beyond what is built in.
 
 ---
 
-## Customisation Tips
+## Security Notes
 
-- **Add more Surahs** — extend the `QURAN_SURAHS` and `QURAN_VERSES` objects.
-- **Add more Bible books** — extend `BIBLE_CHAPTERS_COUNT` and `BIBLE_VERSES`.
-- **Change the AI model** — swap `claude-sonnet-4-20250514` in `callAI()` for another Anthropic model string.
-- **Switch to Pollinations** — replace the `callAI()` fetch target with `https://text.pollinations.ai/openai` and adjust the request body to match the Pollinations OpenAI-compatible schema.
-- **Add music** — the studio canvas loop is a good injection point for a Web Audio API background track.
+- Keys are stored **in JavaScript memory only** — they are cleared when you close or refresh the tab
+- No keys are written to `localStorage`, cookies, or any server
+- For a shared or public deployment, proxy API calls through a backend so keys are never in the browser at all
+- Never paste API keys into chat messages — share them only via the sidebar key fields
 
 ---
 
-## Browser Compatibility
+## Browser Requirements
 
-Requires a modern browser with support for: `fetch`, `async/await`, `<canvas>`, Web Speech API (`speechSynthesis`), CSS custom properties, and `dvh` units.
-Chrome 90+ / Edge 90+ / Firefox 90+ / Safari 15+ recommended.
+Chrome 90+ · Edge 90+ · Firefox 90+ · Safari 15+
+
+Requires: `fetch`, `async/await`, `<canvas>`, Web Speech API (`speechSynthesis`), CSS custom properties, `dvh` units.
+
+---
+
+## Customisation
+
+- **Change the Pollinations model** — edit the `model` field in `callPollinations()` (e.g. `'mistral'`, `'claude'`)
+- **Add Surahs** — extend the `QURAN_SURAHS` and `QURAN_VERSES` objects
+- **Add Bible books** — extend `BIBLE_CHAPTERS_COUNT` and `BIBLE_VERSES`
+- **Adjust TTS defaults** — change `value` on the rate/pitch sliders in the TTS panel HTML
+- **Add animation backgrounds** — extend the `drawBackground()` switch cases in the studio script
